@@ -1,0 +1,9 @@
+Uf |i> |y>  = |i> |y + f_val>
+
+
+for each n:
+	Compute all fs and Ufs
+	-->Analyze the time it takes for each Uf<-- Does this depend on Uf? 
+	If its roughly the same for all Uf ---> Average_time_of_execution[n]
+
+plot Average_time_of_execution vs n ----> exponential?
