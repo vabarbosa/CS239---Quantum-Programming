@@ -1,11 +1,3 @@
-Uf |i> |y>  = |i> |y + f_val>
-
-
-for each n:
-	Compute all fs and Ufs
-	-->Analyze the time it takes for each Uf<-- Does this depend on Uf? 
-	If its roughly the same for all Uf ---> Average_time_of_execution[n]
-
 plot Average_time_of_execution vs n ----> exponential?
 
 
@@ -28,10 +20,21 @@ if s=0,
 there will not be any pairs.
 
 if s != 0, then
-for any x, there exists a unique y!=x, such that f(y)=f(x) =f_{xy}, and y can be given by y = x+s
+for any input x, there exists a unique y!=x, such that f(y)=f(x) =f_{xy}, and y can be given by y = x+s
 
 Splitting the 2^n input space into pairs. 2^{n-1} number of pairs. Each of these pairs corresponds to a 
-unique output.
+unique output. Output set
+
+n=2
+s='10'
+'00' and '10' form a pair ---equivalent to--- f(00)=f(10) 
+'11' and '01' form a pair ---equivalent to--- f(11)=f(01) 
+ f(01)= '01'?'00'?'10'?'11'?
+
+
+
+
+
 
 Cases:
 1. s = 0:
@@ -39,9 +42,98 @@ Cases:
 
 2. s != 0: 
 	# possible values of s = N = 2^n.
-	For a particular value of s: # possibilities = (N) P (N/2) = N! / (N/2)!
+	For a particular value of s: # f possibilities = (N) P (N/2) = N! / (N/2)!
 	Total # possibilities = N * (N) P (N/2) 
 In total, S(n) = N! + N * (N) P (N/2) 
 
 Plot S(n) vs n. It grows fast wrt n. Instead, we could choose say g(n) instances of f for any given value of n (where g is a function of n)?
+- [Coding] Classical part of Simon's algo.
+	At each iteration of Simon's algo, we get a list of possible values of s.     
+From the quantum part, we get a set of equations: [ (y_1 . s) % 2= 0 , ..., (y_{n-1} . s) mod 2 = 0. ] <--???maybe this maybe not hard, but cumbersome????
+Classical part finds the possible values of s.
+s = '000' and '010' and '110'
+s = '000' and '110'
+No need to do more iterations, since we conclude with complete confidence that s=110
+
+But if we get '000' in each iteration. 
+
+	
+	If we get a unique value of s, then we are done.
+- [Report] 
+- [For the report] Testing the success rate:
+		Choose success of probability p
+                Choose m accordingly
+		Run Simon's algo 4m times
+		See what fraction of times we get the correct s
+		We expect this to match p.
+
+
+
+To do general:
+1. quantum algorithm simon
+	-Classical
+2. produce all/subset of simon functions
+3. benchmark Simon
+	--> Chooose a few Ufs randomly
+		For every possible s:
+			Choose permutation randomly
+			Construct Uf ..do everything
+4. quantum algorithm Grover
+5. produce Grover functions
+6. benchmark Grover
+7. benchmark DJ
+	for each n:
+	Compute all fs and Ufs
+	--> Analyze the time it takes for each Uf<-- Does this depend on Uf? 
+	If its roughly the same for all Uf ---> Average_time_of_execution[n] 
+ 
+8. benchmark BV
+	for each n:
+	Compute all fs and Ufs
+	-->Analyze the time it takes for each Uf<-- Does this depend on Uf? 
+	If its roughly the same for all Uf ---> Average_time_of_execution[n]
+
+Q. What do we want f to be? A function? An array? Something else?
+
+Grover's algorithm:
+	# possibilities = N C 1  + N C 2 + ... + N C N
+Q. How to do the testing? Choose f randomly and test?
+Q. The number of Grover iterations depends on the number of awesome bit-strings. How many times do we run the Grover iterations?
+Q. What happens if there is not a single awesome bit-string? What if all of them are awesome?
+Q. 'Strategies' section in the notes (dependence of k on a). Do more research about this.
+
+
+
+
+Piazza:
+1. Grover's: Do we assume what a is?
+2. What do we want f to be? A function? An array? Something else? 
+3. Will we be given f, or Uf? [Present the design for how you prevent the user of U_f from accessing the implementation of U_f.  Assess how well you succeeded. -> Failed]
+
+
+To do for Sunday:
+1. Simon's
+	- Quantum part
+	- [Pratik] Create random functions
+	- Read up/identify approach to solve the `mod 2' set of equations.
+	- [Nishant] Implement a solution to the `mod 2' set of equations
+2. Grover's
+	- For a=1, implement
+	- For a=2, ..
+	- For a != 0 or N, implement
+	- [Attiano] Create random functions
+	- Read or think about [['Strategies' section in the notes (dependence of k on a). Do more research about this.]]
+
+
+Tomorrow/later:
+- Strategies part of Grover
+- Benchmarking for all algos.
+
+
+
+
+
+
+
+
    

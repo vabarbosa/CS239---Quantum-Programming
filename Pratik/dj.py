@@ -129,9 +129,9 @@ Uf = create_Uf(func_list_balanced[2], n)
     
 
 
-n = 5
+n = 4
 func_list_balanced, func_list_constant = create_function(n)
-Uf_matrix = create_Uf(func_list_balanced[0], n)
+Uf_matrix = create_Uf(func_list_balanced[2], n)
 print("Done creating Uf matrix")
 Uf_quil_def = DefGate("Uf", Uf_matrix)
 # Get the gate constructor
