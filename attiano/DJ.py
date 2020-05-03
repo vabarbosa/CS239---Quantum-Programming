@@ -59,10 +59,11 @@ class create_f(object):
 		
 			
 
-	def f_to_uf(self):
-	#empty implementation right now... is this needed?
-		for func in self.func:
-			return func
+	def f_to_uf(self,f):
+		uf = f
+		n = len(inspect.signature(f).parameters)
+	return uf,n
+	
 				
 def DJ(gate_def,n):
 	if( n <= 9 ) :
@@ -83,9 +84,10 @@ def DJ(gate_def,n):
 	#Hadamard each qubit
 	for i in range(n+1):
 		p += H(i)
+	
+	result_sum = 0
 
 	result = qc.run_and_measure(p, trials=NUM_TRIALS)
-	result_sum = 0
 	for i in range(n):
 		result_sum+=sum(result[i])
 	#result_sum will be 0 if over every trial we measured every qubit to be 0, otherwise we measure 1 from the qubit
