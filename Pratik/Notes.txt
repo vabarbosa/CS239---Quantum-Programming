@@ -7,3 +7,41 @@ for each n:
 	If its roughly the same for all Uf ---> Average_time_of_execution[n]
 
 plot Average_time_of_execution vs n ----> exponential?
+
+
+Simon's possiblities:
+n bits
+N = 2**n possible inputs
+N possible outputs
+
+f(x) = f(y) iff x + y \in {0,s}
+
+Lets say x0 is not paired up with anything
+f(x0) = ...
+for every y!= x0, f(y) != f(x0).
+We know this to be true f(x0+s) = f(x0) 
+x0+s = x0
+This is possible only if s = 0.
+If there exists even a single unpaired input, then s = 0, and all inputs are unpaired
+
+if s=0,
+there will not be any pairs.
+
+if s != 0, then
+for any x, there exists a unique y!=x, such that f(y)=f(x) =f_{xy}, and y can be given by y = x+s
+
+Splitting the 2^n input space into pairs. 2^{n-1} number of pairs. Each of these pairs corresponds to a 
+unique output.
+
+Cases:
+1. s = 0:
+   # possibilities = (N) P (N) = N!
+
+2. s != 0: 
+	# possible values of s = N = 2^n.
+	For a particular value of s: # possibilities = (N) P (N/2) = N! / (N/2)!
+	Total # possibilities = N * (N) P (N/2) 
+In total, S(n) = N! + N * (N) P (N/2) 
+
+Plot S(n) vs n. It grows fast wrt n. Instead, we could choose say g(n) instances of f for any given value of n (where g is a function of n)?
+   
