@@ -6,13 +6,13 @@ Created on Sat May  2 15:50:05 2020
 """
 
 from pyquil import Program, get_qc
-from pyquil.latex import display
 from pyquil.quil import DefGate
 from pyquil.gates import X,H,MEASURE
 from itertools import combinations 
 import numpy as np
 import random as rd
 import time
+from math import factorial as F
 
 
 
@@ -81,13 +81,37 @@ def get_random_f(n):
     Output:
         ndarray of length n, containing 0s and 1s.
     """
-    func_list_balanced, func_list_constant = create_all_functions(n)
-    num_balanced = np.shape(func_list_balanced)[0]
-    random_index = rd.randint(0,num_balanced+1)
-    if random_index >= num_balanced:
-        return func_list_constant[random_index % num_balanced]
+    ## First, decide whether to output a constant function or a balanced function
+    ## number of balanced functions = 2**n C 2**(n-1)
+    ## number of constant functions = 2
+    def nCr(n,r):
+        """
+        Calculate n-factorial-r
+        """
+        return F(n) / F(r) / F(n-r)
+
+    num_balanced = nCr(2**n, 2**(n-1))
+    random_index = rd.randint(0, num_balanced+1)
+    if random_index < num_balanced:
+        #return a balanced function
+         perm = np.random.permutation(2**n)
+         perm = perm[0:2**(n-1)]
+         f = np.zeros(2**n, dtype = int)
+         for i in perm:
+             f[i] = 1
+         return f
+    elif random_index == num_balanced:
+        return np.zeros(2**n, dtype = int)
     else:
-        return func_list_balanced[random_index]
+        return np.ones(2**n, dtype = int)
+    
+#    func_list_balanced, func_list_constant = create_all_functions(n)
+#    num_balanced = np.shape(func_list_balanced)[0]
+#    random_index = rd.randint(0,num_balanced+1)
+#    if random_index >= num_balanced:
+#        return func_list_constant[random_index % num_balanced]
+#    else:
+#        return func_list_balanced[random_index]
 
 #random_f = get_random_f(2)    
 
@@ -115,7 +139,7 @@ def create_Uf(f):
             Uf[int(out,2),int(inp,2)] = 1
     return Uf
 
-def verify_quantum_output(DJ_output, f):
+def verify_dj_output(DJ_output, f):
     """
     Verifies if the output of DJ algorithm is correct.
     Input:
@@ -142,7 +166,7 @@ def verify_quantum_output(DJ_output, f):
     
 
 
-n = 3
+n = 6
 f = get_random_f(n)
 Uf = create_Uf(f)
 print("Done creating Uf matrix")
@@ -150,7 +174,7 @@ print("Done creating Uf matrix")
 Uf_quil_def = DefGate("Uf", Uf)
 Uf_gate = Uf_quil_def.get_constructor() # Get the gate constructor
 
-
+start = time.time()
 def DJ(Uf_quil_def, Uf_gate, n, time_out_val = 100):
     """
     Deutsch-Jozsa algorithm
@@ -190,15 +214,18 @@ def DJ(Uf_quil_def, Uf_gate, n, time_out_val = 100):
         print("function is constant")
         return 1
     
-DJ_output = DJ(Uf_quil_def, Uf_gate, n)
-verify_quantum_output(DJ_output, f)
+DJ_output = DJ(Uf_quil_def, Uf_gate, n, 1000)
+end = time.time()
+print(f)
+print("It took %i seconds to complete the simulation"%(end-start))
+verify_dj_output(DJ_output, f)
 #%% 
 
 
 ### Testing
-time_out_val = 5000
+time_out_val = 10000
 n_min = 1
-n_max = 8
+n_max = 6
 n_list = list(range(n_min,n_max+1))
 num_times = 5
 time_reqd_arr = np.zeros([(n_max-n_min)+1, num_times])
@@ -213,9 +240,9 @@ for ind, n in enumerate(n_list):
         DJ_output = DJ(Uf_quil_def, Uf_gate, n, time_out_val)
         end = time.time()
         time_reqd_arr[ind, iter_ind] = end-start
-        if not(verify_quantum_output(DJ_output, f)):
+        if not(verify_dj_output(DJ_output, f)):
             print("DJ_algorithm failed to obtain the right output for n=%i"%n)
-        print("done for n = %i and iteration = %i"%(n,iter_ind))
+        print("done for n = %i and iteration = %i... took %i seconds"%(n,iter_ind,(end-start)))
             
         
 
