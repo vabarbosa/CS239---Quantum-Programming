@@ -11,7 +11,7 @@ from pyquil.quil import DefGate
 from pyquil.gates import *
 #from itertools import combinations 
 import numpy as np
-import random as rd
+#import random as rd
 
 
 #%% Given some value of bitstring s, obtain the corresponding function f
@@ -125,7 +125,7 @@ def create_Uf(f,n):
 
 
 
-def Simon_quantum(Uf_quil_def, Uf_gate, n):
+def Simon_quantum(Uf_quil_def, Uf_gate, n, time_out_val = 100):
     """
     Simon's algorithm quantum
     Input:
@@ -149,23 +149,28 @@ def Simon_quantum(Uf_quil_def, Uf_gate, n):
 #    print(p)
 
     qc = get_qc(str(n*2)+'q-qvm') 
+    qc.compiler.client.timeout = time_out_val
     executable = qc.compile(p)
     result = np.reshape(qc.run(executable),n)
     y = str(result)[1:-1]
-    print("y = " + y)
     return y
   
 #%% Testing
-n = 2
-s = '01'
+n = 3
+s = '101'
 func_arr = s_function(s)
 Uf_matrix = create_Uf(func_arr,n)
 print("Done creating Uf matrix")
 Uf_quil_def = DefGate("Uf", Uf_matrix)
 # Get the gate constructor
 Uf_gate = Uf_quil_def.get_constructor()
-#%%
+#%% Run quantum algorithm n+1 times
+
+y_list = []
+for i in range(n-1):
+    y_list.append(Simon_quantum(Uf_quil_def, Uf_gate, n))
+print(y_list)
 
 
-y = Simon_quantum(Uf_quil_def, Uf_gate, n)
-        
+#%% Classical post-processing
+#Given a list y_list of length (n-1), consisting of bitstrings of length n, compute solutions for the equations s.y_list[i] = 0
