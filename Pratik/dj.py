@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """
 Created on Sat May  2 15:50:05 2020
 
@@ -275,4 +274,3 @@ plt.yticks(fontsize=15)
 
 
 fig.savefig('Figures/dj.png', bbox_inches='tight')
-#
