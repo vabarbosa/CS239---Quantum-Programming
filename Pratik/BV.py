@@ -7,11 +7,11 @@ Created on Sat May  2 18:58:42 2020
 from pyquil import Program, get_qc
 from pyquil.quil import DefGate
 from pyquil.gates import X,H,MEASURE
-from itertools import combinations 
+#from itertools import combinations 
 import numpy as np
 import random as rd
 import time
-from math import factorial as F
+#from math import factorial as F
 import matplotlib.pyplot as plt
 
 
@@ -141,6 +141,7 @@ def BV(Uf_quil_def, Uf_gate, n, time_out_val = 100):
 
     ## compile and run
     qc = get_qc(str(n+1)+'q-qvm') 
+    qc.compiler.client.timeout = time_out_val
     executable = qc.compile(p)
     result = np.reshape(qc.run(executable),n)
     print("The measured state, and hence a = "+str(result)[1:-1])
@@ -180,4 +181,59 @@ Uf_quil_def = DefGate("Uf", Uf_matrix)
 Uf_gate = Uf_quil_def.get_constructor()    
 BV_output = BV(Uf_quil_def, Uf_gate, n)
 verify_BV_output(BV_output, f)
-        
+
+#%% 
+### Testing
+time_out_val = 10000
+n_min = 1
+n_max = 6
+n_list = list(range(n_min,n_max+1))
+num_times = 5
+time_reqd_arr = np.zeros([(n_max-n_min)+1, num_times])
+
+for ind, n in enumerate(n_list):
+    for iter_ind in range(num_times):
+        f = get_random_f(n)
+        Uf = create_Uf(f)
+        Uf_quil_def = DefGate("Uf", Uf)
+        Uf_gate = Uf_quil_def.get_constructor()
+        start = time.time()
+        BV_output = BV(Uf_quil_def, Uf_gate, n, time_out_val)
+        end = time.time()
+        time_reqd_arr[ind, iter_ind] = end-start
+        if not(verify_BV_output(BV_output, f)):
+            print("BV algorithm failed to obtain the right output for n=%i"%n)
+        print("done for n = %i and iteration = %i... took %i seconds"%(n,iter_ind,(end-start)))
+            
+
+#%% Save the data
+
+np.savez('BV_benchmarking.npz', n_list = n_list,time_reqd_arr = time_reqd_arr)
+       
+#%% Load data
+
+data = np.load('BV_benchmarking.npz')
+n_list = data['n_list']
+time_reqd_arr = data['time_reqd_arr']
+
+#%%
+avg_time = np.sum(time_reqd_arr,1)/np.shape(time_reqd_arr)[1]
+#%% Plot and save 
+
+plt.rcParams["font.family"] = "serif"
+fig = plt.figure(figsize=(16,10))
+
+z = np.polyfit(n_list, avg_time, 10)
+p = np.poly1d(z)
+
+plt.plot(np.linspace(n_list[0], n_list[-1] + 0.1, 100), p(np.linspace(n_list[0], n_list[-1] + 0.1, 100)), ls = '-', color = 'r')
+plt.plot(n_list, avg_time, ls = '', markersize = 15, marker = '.',label = 'M') #, ls = '--'
+plt.title('Execution time scaling for Bernstein-Vazirani algorithm', fontsize=25)
+plt.xlabel('n (bit string length)',fontsize=20)
+plt.ylabel('Average time of execution (s)',fontsize=20)
+plt.xticks(fontsize=15)
+plt.yticks(fontsize=15)
+#plt.grid()
+
+
+fig.savefig('Figures/BV.png', bbox_inches='tight')
