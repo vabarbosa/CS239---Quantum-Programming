@@ -123,7 +123,7 @@ def BV(Uf_quil_def, Uf_gate, n):
         n: Integer, the length on input bit strings which f takes.
         
     Output: 
-        Integer: 0 if function is balanced, and 1 if function is constant
+        String: Measured state after executing the BV circuit. This corresponds to the value of a predicted by the BV circuit.
     """
 
     p = Program()
