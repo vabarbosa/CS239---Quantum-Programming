@@ -7,11 +7,9 @@ Created on Sat May  2 18:58:42 2020
 from pyquil import Program, get_qc
 from pyquil.quil import DefGate
 from pyquil.gates import X,H,MEASURE
-#from itertools import combinations 
 import numpy as np
 import random as rd
 import time
-#from math import factorial as F
 import matplotlib.pyplot as plt
 
 
@@ -148,17 +146,17 @@ def BV(Uf_quil_def, Uf_gate, n, time_out_val = 100):
     return "".join(str(s) for s in result)
     
 
-def verify_BV_output(DJ_output, f):
+def verify_BV_output(BV_output, f):
     """
     Verifies if the output of BV algorithm is correct.
     Args:
         f: ndarray of length N = 2**n, contining the values of function.
-        DJ_output: string of length n, containing the value of a predicted by the BV algorithm.                    
+        BV_output: string of length n, containing the value of a predicted by the BV algorithm.                    
     Returns:
         is_correct: bool (TRUE if the DJ output is correct, and FALSE otherwise)
     """
     b = str(f[0])
-    a = [int(i) for i in DJ_output]
+    a = [int(i) for i in BV_output]
     f_predicted = create_bv_function(a,b)
     
     delta_f = f_predicted - f 
@@ -237,3 +235,51 @@ plt.yticks(fontsize=15)
 
 
 fig.savefig('Figures/BV.png', bbox_inches='tight')
+
+
+#%% Dependance of time of execution on Uf
+
+num_times = 100
+time_out_val = 10000
+time_array = np.zeros(num_times)
+n = 3
+for iter_ind in range(num_times):
+    f = get_random_f(n)
+    Uf = create_Uf(f)
+    Uf_quil_def = DefGate("Uf", Uf)
+    Uf_gate = Uf_quil_def.get_constructor()
+    start = time.time()
+    BV_output = BV(Uf_quil_def, Uf_gate, n, time_out_val)
+    end = time.time()
+    time_array[iter_ind] = end - start
+    if not(verify_BV_output(BV_output, f)):
+        print("DJ_algorithm failed to obtain the right output for n=%i"%n)
+    print("done for n = %i and iteration = %i... took %i seconds"%(n,iter_ind,(end-start)))
+    
+#%% Save the data
+
+np.savez('BV_Uf_dependence.npz', num_times = num_times,time_array = time_array, n = n, )
+
+#%% Load data
+
+data = np.load('BV_Uf_dependence.npz')
+num_times = data['num_times']
+time_array = data['time_array']
+n = data['n']
+
+#%% Plot histogram of time taken for a particular value of n
+
+plt.rcParams["font.family"] = "serif"
+fig = plt.figure(figsize=(16,10))
+
+
+plt.hist(time_array)
+plt.title('Dependence of execution time on $U_f$ (Bernstein-Vazirani algorithm)', fontsize=25)
+plt.xlabel('Execution time (s)',fontsize=20)
+plt.ylabel('Frequency of occurence',fontsize=20)
+plt.xticks(fontsize=15)
+plt.yticks(fontsize=15)
+
+
+fig.savefig('Figures/BV_hist.png', bbox_inches='tight')
+
