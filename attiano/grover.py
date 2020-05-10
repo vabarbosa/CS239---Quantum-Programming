@@ -14,14 +14,14 @@ import matplotlib.pyplot as plt
 def convert_n_bit_string_to_int(x,n):
 	"""
 	inputs: x - array of ints that represents an unsigned bit string
-			n is the number of bits
-	
+		n is the number of bits
+
 	outputs: integer corresponding to x's unsigned value
 	"""
-		integ = 0
-		for idx, val in enumerate(x):
-			integ += val*2^(n-idx-1)
-		return int(integ)
+	integ = 0
+	for idx, val in enumerate(x):
+		integ += val*2^(n-idx-1)
+	return int(integ)
 
 
 def check_correctness(func,result):
@@ -240,8 +240,9 @@ if __name__== '__main__':
 			compile_times[ind, iter_ind] = avg_compile/len(all)
 			
 	#testing for uf computation time at a fixed n
-	input_list = list(range(64)) #64 is (4 qubits choose 2) -> 2^4 choose 2 -> number of possible functions with a=2
-	uf_compute_times = np.zeros([64,num_times])
+	num_funcs = 16 #64 is (4 qubits choose 1) -> 2^4 choose 1 -> number of possible functions with a=2
+	input_list = list(range(num_funcs))
+	uf_compute_times = np.zeros([num_funcs,num_times])
 	for iter_ind in range(num_times):
 		a = 1
 		n = 4
@@ -322,7 +323,7 @@ if __name__== '__main__':
 	
 	plt.plot(input_list, uf_compute_times, ls = '', markersize = 15, marker = '.',label = 'M') #, ls = '--'
 	plt.title('Uf time scaling for Grovers algorithm, n=4, a = 1', fontsize=25)
-	plt.xlabel('n (bit string length)',fontsize=20)
+	plt.xlabel('U_f (16 possible funcs)',fontsize=20)
 	plt.ylabel('Average time of computation (ms)',fontsize=20)
 	plt.xticks(fontsize=15)
 	plt.yticks(fontsize=15)
