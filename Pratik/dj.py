@@ -255,7 +255,7 @@ time_reqd_arr = data['time_reqd_arr']
 
 #%%
 avg_time = np.sum(time_reqd_arr,1)/np.shape(time_reqd_arr)[1]
-#%% Plot and save 
+#%% Benchmarking time taken vs n
 
 plt.rcParams["font.family"] = "serif"
 fig = plt.figure(figsize=(16,10))
@@ -274,3 +274,53 @@ plt.yticks(fontsize=15)
 
 
 fig.savefig('Figures/dj.png', bbox_inches='tight')
+
+
+#%% Dependance of time of execution on Uf
+
+num_times = 100
+time_out_val = 10000
+time_array = np.zeros(num_times)
+n = 3
+for iter_ind in range(num_times):
+    f = get_random_f(n)
+    Uf = create_Uf(f)
+    Uf_quil_def = DefGate("Uf", Uf)
+    Uf_gate = Uf_quil_def.get_constructor()
+    start = time.time()
+    DJ_output = DJ(Uf_quil_def, Uf_gate, n, time_out_val)
+    end = time.time()
+    time_array[iter_ind] = end - start
+    if not(verify_dj_output(DJ_output, f)):
+        print("DJ_algorithm failed to obtain the right output for n=%i"%n)
+    print("done for n = %i and iteration = %i... took %i seconds"%(n,iter_ind,(end-start)))
+    
+#%% Save the data
+
+np.savez('dj_Uf_dependence.npz', num_times = num_times,time_array = time_array, n = n, )
+
+#%% Load data
+
+data = np.load('dj_Uf_dependence.npz')
+num_times = data['num_times']
+time_array = data['time_array']
+n = data['n']
+
+#%% Plot histogram of time taken for a particular value of n
+
+plt.rcParams["font.family"] = "serif"
+fig = plt.figure(figsize=(16,10))
+
+
+plt.hist(time_array)
+plt.title('Dependence of execution time on $U_f$ (Deutsch-Jozsa algorithm)', fontsize=25)
+plt.xlabel('Execution time (s)',fontsize=20)
+plt.ylabel('Frequency of occurence',fontsize=20)
+plt.xticks(fontsize=15)
+plt.yticks(fontsize=15)
+
+
+fig.savefig('Figures/dj_hist.png', bbox_inches='tight')
+
+
+        
