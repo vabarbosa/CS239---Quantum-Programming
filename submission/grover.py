@@ -176,21 +176,20 @@ def calc_lim(a,n):
 	if(str(type(a))!="<class 'int'>"):
 		raise TypeError('input for a non-integer')
 	N = 2**n
-	#theta = np.arcsin(a/N)
-	theta = a/np.sqrt(N)
-	#heuristically determined if n<4 you overshoot if you round, and if n>4 you undershoot if you floor
-	#didnt test past n=6 as each trial took non-negligible time to compile and run
-	if n < 4:
-		k = math.floor(abs(((np.pi)/(4*theta)) - 0.5))
-		#k = round(abs(((np.pi)/(4*theta)) - 0.5))
-	else:
-		k = round(abs(((np.pi)/(4*theta)) - 0.5))
-	return int(k)
+	theta = np.arcsin(a/np.sqrt(N))
+	
+	k_approx = ((np.pi/(4*theta)) - 0.5)
+	
+	k_arr = np.array([np.ceil(k_approx),np.floor(k_approx)])
+	
+	prob_arr = np.sin((2*k_arr + 1) * theta ) ** 2
+	max = np.argmax(prob_arr)
+	
+	return int(k_arr[max]), prob_arr[max]
 
 def grover(z0,zf,n,a):
 	#f is the function we oracle call on
 	#assum input is n length bit string, with each bit value as a different input
-	
 	
 	#try every possible input - brute force, if f(x) = return 1, otherwise return 0
 	if(str(type(n))!="<class 'int'>"):
@@ -220,20 +219,21 @@ def grover(z0,zf,n,a):
 	num_arr = list(range(n))
 
 	#2. apply G = -(H^n)zo(H^n)zf k times
-	k = calc_lim(a,n)
+	k, prob = calc_lim(a,n)
+	
 
 	for i in range(k):
 		#Apply zf
 		p += z_f(*num_arr)
 		#Hadamard each qubit
-		for i in range(n):
-			p += H(i)
+		for j in range(n):
+			p += H(j)
 		#apply z0
 		p += z_0(*num_arr)
 		#-Hadamard each qubit
-		for i in range(n):
-			p += H(i)
-			p += minus_gate(i)
+		for j in range(n):
+			p += H(j)
+			p += minus_gate(j)
 		#measure each qubit
 		for qubit in range(n):
 			p += MEASURE(qubit, ro[qubit])
@@ -301,6 +301,8 @@ if __name__== '__main__':
 	compute_times = np.zeros([(n_max-n_min)+1, num_times])
 
 	#compute average compile and compute time for all functions for a range of n values and a given 'a'
+	failure_count = 0
+	num_trials = 0 
 	for ind, n in enumerate(n_list):
 		for iter_ind in range(num_times):
 			a = 1
@@ -308,7 +310,8 @@ if __name__== '__main__':
 			avg_compute = 0
 			avg_compile = 0
 			for func in all:
-				print(func)
+				num_trials+=1
+				print("func%s"%str(func))
 				z0 = create_z0(n)
 				zf = create_zf(func,n)
 				z_0 = DefGate("Z0", z0)
@@ -316,10 +319,17 @@ if __name__== '__main__':
 				result, compile_time, run_time = grover(z_0,z_f,n,a)
 				avg_compile += compile_time
 				avg_compute += run_time
-				print(result)
-				#print(check_correctness(func,result,n))
+				print("result: %s" % str(result))
+				print(check_correctness(func,result,n))
+				if(not check_correctness(func,result,n)):
+					failure_count+=1;
 			compute_times[ind, iter_ind] = avg_compute/len(all)
 			compile_times[ind, iter_ind] = avg_compile/len(all)
+	failure_prob = failure_count/num_trials * 100
+	print("failure probability for n=3:")
+	print(failure_prob)
+	print("failure count: %d out of %d"%(failure_count,num_trials))
+
 			
 	#testing for uf computation time at a fixed n
 	num_funcs = 16 #64 is (4 qubits choose 1) -> 2^4 choose 1 -> number of possible functions with a=2
