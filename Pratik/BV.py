@@ -1,9 +1,3 @@
-"""
-Created on Sat May  2 18:58:42 2020
-
-@author: sathe
-"""
-
 from pyquil import Program, get_qc
 from pyquil.quil import DefGate
 from pyquil.gates import X,H,MEASURE
@@ -11,8 +5,6 @@ import numpy as np
 import random as rd
 import time
 import matplotlib.pyplot as plt
-
-
 
 
 #%% 
@@ -25,6 +17,13 @@ def binary_add(s1,s2):
     Returns:
         s: String s given by s = s1 + s2 (of length n) containing only zeros and ones
     """
+    if type(s1) != str or type(s2) != str:  #If inputs are not strings, raise an error
+        raise ValueError('The inputs are not strings')
+    if sum([1 for x in s1 if (x != '0' and x != '1')]) > 0 or sum([1 for x in s2 if (x != '0' and x != '1')]) > 0:
+        raise ValueError('Input strings contain characters other than 0s and 1s') 
+    if len(s1) != len(s2):
+        raise ValueError('Input strings are not of the same length') 
+        
     x1 = np.array([int(i) for i in s1])
     x2 = np.array([int(i) for i in s2])
     x = (x1 + x2 ) % 2
@@ -40,8 +39,13 @@ def give_binary_string(z,n):
     Returns: 
         s: String of length n containing the binary representation of integer z.
     """
+    if type(z) != int or type(n) != int:
+        raise ValueError('Both arguments must be integers.')
+    
     s = bin(z)
     m = n + 2 - len(s)
+    if m < 0:
+        raise ValueError('z is greater than the 2 raised to n. Need to input a larger value of n') 
     s = s.replace("0b", '0' * m)
     return s 
 
@@ -51,12 +55,19 @@ def create_bv_function(a,b):
     Create a function f:{0,1}^n --> {0,1} given by f(x) = a . x + b
     Args: 
         a: string of length n
-        b: string of length n
+        b: string of length 1
         All arrays must contain integers 0 and 1
     Returns:
         f: Array of length 2^n. f[i] is the value of f corresponding to binary representation of i being the imput
         f = a . x + b
     """
+    if type(a) != str or type(b) != str:  #If inputs are not strings, raise an error
+        raise ValueError('The inputs are not strings')
+    if sum([1 for x in a if (x != '0' and x != '1')]) > 0 or sum([1 for x in b if (x != '0' and x != '1')]) > 0:
+        raise ValueError('Input strings contain characters other than 0s and 1s') 
+    if len(b) != 1:
+        raise ValueError('The second argument should be a string of length 1') 
+        
     n = len(a)
     f = np.zeros(2**n, dtype = int)
     a = np.array([int(i) for i in a])
@@ -79,8 +90,15 @@ def create_Uf(f):
     Returns:
         Uf: ndarray of size [2**(n+1), 2**(n+1)], representing a unitary matrix.
     """
+    if type(f) != np.ndarray:
+        raise ValueError('Input the function in the form of an ndarray')
+    if any((x!= 0 and x != 1) for x in f.tolist()):
+        raise ValueError('The input function should only contain zeros and ones.')
+    
     two_raized_n = np.size(f)
     n = int(np.log2(two_raized_n))
+    if n != np.log2(two_raized_n):
+        raise ValueError("n must be a power of 2!")
     N = 2 ** (n+1)
     Uf = np.zeros([N,N], dtype = complex )
     
@@ -103,6 +121,10 @@ def get_random_f(n):
     Returns:
         ndarray of length n, containing 0s and 1s.
     """
+    if type(n) != int:
+        raise ValueError('The input should be an integer')
+    if n <= 0:
+        raise ValueError('Input a positive integer') 
     ## Obtain a and b randomly
     a = give_binary_string(rd.randint(0, 2**n - 1), n)
     b = str(rd.randint(0,1))
@@ -110,11 +132,10 @@ def get_random_f(n):
     
     
 
-def BV(Uf_quil_def, Uf_gate, n, time_out_val = 100):
+def BV(Uf_quil_def, n, time_out_val = 100):
     """
     Bernstrin-Vazirani algorithm: Determines the value of a, for a function f = a . x + b
     Args:
-        Uf_gate: gate object which acts on n+1 qubits
         Uf_quil_def: DefGate object corresponding to oracle Uf
         n: Integer, the length on input bit strings which f takes.
     
@@ -124,6 +145,10 @@ def BV(Uf_quil_def, Uf_gate, n, time_out_val = 100):
     Returns: 
         String: Measured state after executing the BV circuit. This corresponds to the value of a predicted by the BV circuit.
     """
+    if not isinstance(Uf_quil_def, DefGate):
+        raise ValueError("Uf_quil_def must be a gate definition!")
+        
+    Uf_gate = Uf_quil_def.get_constructor() # Get the gate constructor
     ## Define the circuit
     p = Program()
     ro = p.declare('ro', 'BIT', n)
@@ -144,6 +169,33 @@ def BV(Uf_quil_def, Uf_gate, n, time_out_val = 100):
     result = np.reshape(qc.run(executable),n)
     print("The measured state, and hence a = "+str(result)[1:-1])
     return "".join(str(s) for s in result)
+
+def run_BV(f, time_out_val = 1000):
+    """
+    Bernstrin-Vazirani algorithm: Determines the value of a, for a function f = a . x + b
+    Args:
+        f: ndarray of length N = 2**n, contining the values of function.
+    Kwargs:
+        time_out_val: Integer. Timeout in seconds.
+    Returns: 
+        Integer: 0 if function is balanced, and 1 if function is constant
+    """
+    
+    if type(f) != np.ndarray:
+        raise ValueError('Input the function in the form of an ndarray')
+    if any((x!= 0 and x != 1) for x in f.tolist()):
+        raise ValueError('The input function should only contain zeros and ones.')
+    
+    two_raized_n = np.size(f)
+    n = int(np.log2(two_raized_n))
+    if n != np.log2(two_raized_n):
+        raise ValueError("n must be a power of 2!")
+    
+        
+    Uf = create_Uf(f)
+    Uf_quil_def = DefGate("Uf", Uf)
+    BV_output = BV(Uf_quil_def, n, 1000)
+    return BV_output
     
 
 def verify_BV_output(BV_output, f):
@@ -156,7 +208,7 @@ def verify_BV_output(BV_output, f):
         is_correct: bool (TRUE if the DJ output is correct, and FALSE otherwise)
     """
     b = str(f[0])
-    a = [int(i) for i in BV_output]
+    a = BV_output 
     f_predicted = create_bv_function(a,b)
     
     delta_f = f_predicted - f 
@@ -175,9 +227,8 @@ f = get_random_f(n)
 #f = create_bv_function('101','1')
 Uf_matrix = create_Uf(f)
 print("Done creating Uf matrix")
-Uf_quil_def = DefGate("Uf", Uf_matrix)
-Uf_gate = Uf_quil_def.get_constructor()    
-BV_output = BV(Uf_quil_def, Uf_gate, n)
+Uf_quil_def = DefGate("Uf", Uf_matrix) 
+BV_output = BV(Uf_quil_def, n, 1000)
 verify_BV_output(BV_output, f)
 
 #%% 
@@ -194,9 +245,8 @@ for ind, n in enumerate(n_list):
         f = get_random_f(n)
         Uf = create_Uf(f)
         Uf_quil_def = DefGate("Uf", Uf)
-        Uf_gate = Uf_quil_def.get_constructor()
         start = time.time()
-        BV_output = BV(Uf_quil_def, Uf_gate, n, time_out_val)
+        BV_output = BV(Uf_quil_def, n, time_out_val)
         end = time.time()
         time_reqd_arr[ind, iter_ind] = end-start
         if not(verify_BV_output(BV_output, f)):
@@ -249,7 +299,7 @@ for iter_ind in range(num_times):
     Uf_quil_def = DefGate("Uf", Uf)
     Uf_gate = Uf_quil_def.get_constructor()
     start = time.time()
-    BV_output = BV(Uf_quil_def, Uf_gate, n, time_out_val)
+    BV_output = BV(Uf_quil_def, n, time_out_val)
     end = time.time()
     time_array[iter_ind] = end - start
     if not(verify_BV_output(BV_output, f)):
