@@ -502,11 +502,13 @@ def run_tests(npz_file):
                                
     np.savez(npz_file, n_list = n_list, comp_time_arr = comp_time_arr, run_time_arr = run_time_arr, time_per_msmt = time_per_msmt)
 
-def run_simon(f):
+def run_simon(f, can_be_zero=True):
     """
     Given a function f:{0,1}^n ---> {0,1}^n, creates Uf, creates the circuit, runs it, checks the value of s is not 0 by calling f twice
     Args:
         f: 2^n x n array consisting of integers 0 and 1. Each row is the integer representation of x mapping to a list representing the binary string of f(x) = y.
+    Kwargs:
+        can_be_zero: boolean is s=0 is allowed. If true, f needs to be called twice to see if it's 1 to 1. If false, s can be returned without calling f.
     Returns:
         Uf: ndarray of size [2**(2n), 2**(2n)], representing a unitary matrix.
     """
@@ -516,6 +518,9 @@ def run_simon(f):
     Uf_quil_def = DefGate("UF", uf)
     _, qc, executable = compile_simon(Uf_quil_def, len(f[0]), time_out_val)
     _, _, s_calc = simon(len(f[0]), qc, executable)
+
+    if not can_be_zero:
+        return s_calc
     
     # Only need to call f, is zero is a possibility
     s_calc = true_s(f, s_calc)

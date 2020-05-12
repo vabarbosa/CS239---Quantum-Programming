@@ -49,6 +49,12 @@ Output:
 The program outputs progress messages as it goes. It prints each y it measures. It interprets the measurements and calulates s.
 In order to allow s as a possible secret, f(0) must be compared against f(s). If they're equal s_calc is correct, otherwise f is 1 to 1 and s = 0.
 run_simon(f) will call f twice to confirm the correct value of s.
+
+If f should not be called, run:
+>>> run_simon(f, False)
+
+This should be used if it is known that s != 0.
+
 The returned value will be a list of bits representing s.
 
 Lower Level:
