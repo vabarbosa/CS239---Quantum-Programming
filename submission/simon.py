@@ -228,7 +228,7 @@ def create_Uf(f):
     """
     Given a function f:{0,1}^n ---> {0,1}^n, creates and returns the corresponding oracle (unitary matrix) Uf
     Args:
-        f: 2^n x 2^n array consisting of integers 0 and 1
+        f: 2^n x n array consisting of integers 0 and 1
     Returns:
         Uf: ndarray of size [2**(2n), 2**(2n)], representing a unitary matrix.
     """
