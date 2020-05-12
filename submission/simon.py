@@ -245,9 +245,9 @@ def create_Uf(f):
         answer = f[list_to_num(binary[:n])]
 
         for index in range(0, len(answer)):
-            if type(answer[index]) != int and (answer[index] != 0 or answer[index] != 1):
+            if answer[index] != 0 and answer[index] != 1:
                 raise ValueError("f must all 0s and 1s!")
-            binary[n + index] ^= answer[index]
+            binary[n + index] ^= int(answer[index])
         col = int("".join([str(num) for num in binary]) , 2)
         Uf[i, col] = 1
     return Uf
@@ -444,7 +444,7 @@ def true_s(f, s_calc):
     """
 
     sint = list_to_num(s_calc)
-    if f[0] != f[sint]:
+    if list(f[0]) != list(f[sint]):
         s_calc = [0]*len(f[0])
     return s_calc
 
@@ -456,14 +456,13 @@ def run_tests(npz_file):
     Returns: 
         None
     """
-
     time_out_val = 10000
     n_min = 1
-    n_max = 3
+    n_max = 2
     n_list = list(range(n_min,n_max+1))
 
-    num_compilation_trials = 5
-    num_run_trials = 5
+    num_compilation_trials = 2
+    num_run_trials = 2
     
     comp_time_arr = np.zeros((n_max-n_min)+1)
     run_time_arr = np.zeros((n_max-n_min)+1)
@@ -502,6 +501,25 @@ def run_tests(npz_file):
                                
                                
     np.savez(npz_file, n_list = n_list, comp_time_arr = comp_time_arr, run_time_arr = run_time_arr, time_per_msmt = time_per_msmt)
+
+def run_simon(f):
+    """
+    Given a function f:{0,1}^n ---> {0,1}^n, creates Uf, creates the circuit, runs it, checks the value of s is not 0 by calling f twice
+    Args:
+        f: 2^n x n array consisting of integers 0 and 1. Each row is the integer representation of x mapping to a list representing the binary string of f(x) = y.
+    Returns:
+        Uf: ndarray of size [2**(2n), 2**(2n)], representing a unitary matrix.
+    """
+    
+    time_out_val = 10000
+    uf = create_Uf(f)
+    Uf_quil_def = DefGate("UF", uf)
+    _, qc, executable = compile_simon(Uf_quil_def, len(f[0]), time_out_val)
+    _, _, s_calc = simon(len(f[0]), qc, executable)
+    
+    # Only need to call f, is zero is a possibility
+    s_calc = true_s(f, s_calc)
+    return s_calc
     
 if __name__ == "__main__":
     TEST_DRIVER = True
