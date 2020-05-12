@@ -31,8 +31,14 @@ def check_correctness(func,result):
 	
 	outputs: bool if the index that corresponds to result is 1, then f(result) = 1
 	"""
+	if(str(type(func))!="<class 'list'>" and str(type(func))!="<class 'numpy.ndarray'>" and str(type(func))!="<class 'function'>"):
+		raise TypeError('input for func not a list, numpy array or a function')
 	x = convert_n_bit_string_to_int(result)
-	return (func[x] == 1)
+	if(str(type(func))=="<class 'function'>"):
+		return (func(x) == 1)
+	else:
+		return (func[x] == 1)
+
 
 def create_minus_gate(n):
 	"""
@@ -40,6 +46,8 @@ def create_minus_gate(n):
 	
 	outputs: minus (np array of ints) - NxN matrix with -1 on the diagonal
 	"""
+	if(str(type(n))!="<class 'int'>"):
+		raise TypeError('input for n non-integer')
 	N = 2**n
 	
 	minus = np.identity(N)
@@ -54,12 +62,21 @@ def create_zf(f,n):
 	input: int n = (number of qubits on which zf acts), array<int> f = function being encoded/evaluated 
 	output: zf = (-1)^f(x)|x>, the identity matrix with -1 on the rows that f(x) returns 1
 	"""
+	if(str(type(n))!="<class 'int'>"):
+		raise TypeError('input for n non-integer')
+	if(str(type(f))!="<class 'list'>" and str(type(f))!="<class 'numpy.ndarray'>" and str(type(f))!="<class 'function'>"):
+		raise TypeError('input for f not a list, numpy array or a function')
+
+		
 	N = 2**n
 
 	zf = np.identity(N)
 
 	for i in range(N):
-		f_val = int(f[i])
+		if(str(type(f))=="<class 'function'>"):
+			f_val = int(f(i))
+		else:
+			f_val = int(f[i])
 		if(f_val == 1):
 			zf[i,i] = -1
 		
@@ -70,6 +87,8 @@ def create_z0(n):
 	input: int n = (number of qubits on which zf acts), array<int> f = function being encoded/evaluated 
 	output: z0 = -|x> if |x> = 0^n else |x> the identity matrix with -1 on first row
 	"""
+	if(str(type(n))!="<class 'int'>"):
+		raise TypeError('input for n non-integer')
 	N = 2**(n)
 
 	z0 = np.identity(N)
@@ -82,7 +101,11 @@ def all_f(n,a):
 	input: int n = number of qubits, int a = number of items that return 1 for function
 	output: list of functions (arrays that can be index with 'x' for function value 'f(x)')
 
-	"""  
+	""" 
+	if(str(type(n))!="<class 'int'>"):
+		raise TypeError('input for n non-integer')	
+	if(str(type(a))!="<class 'int'>"):
+		raise TypeError('input for a non-integer')
 	N = 2**n
 	func_inputs = range(N)
 	comb = combinations(func_inputs, a)
@@ -102,6 +125,10 @@ def calc_lim(a,n):
 	
 	outputs: int k = number of iterations to run grovers algorithm
 	"""
+	if(str(type(n))!="<class 'int'>"):
+		raise TypeError('input for n non-integer')	
+	if(str(type(a))!="<class 'int'>"):
+		raise TypeError('input for a non-integer')
 	N = 2**n
 	#theta = np.arcsin(a/N)
 	theta = a/np.sqrt(N)
@@ -110,7 +137,7 @@ def calc_lim(a,n):
 	if n < 4:
 		k = math.floor(abs(((np.pi)/(4*theta)) - 0.5))
 	else:
-		k = math.round(abs(((np.pi)/(4*theta)) - 0.5))
+		k = round(abs(((np.pi)/(4*theta)) - 0.5))
 	return int(k)
 
 def grover(z0,zf,n,a):
@@ -119,6 +146,14 @@ def grover(z0,zf,n,a):
 	
 	
 	#try every possible input - brute force, if f(x) = return 1, otherwise return 0
+	if(str(type(n))!="<class 'int'>"):
+		raise TypeError('input for n non-integer')	
+	if(str(type(a))!="<class 'int'>"):
+		raise TypeError('input for a non-integer')
+	if(str(type(zf))!="<class 'pyquil.quilbase.DefGate'>"):
+		raise TypeError('input for zf not a pyquil gate definition')
+	if(str(type(z0))!="<class 'pyquil.quilbase.DefGate'>"):
+		raise TypeError('input for z0 not a pyquil gate definition')
 	z_0 = z0.get_constructor()
 	z_f = zf.get_constructor()
 	minus = create_minus_gate(1)
