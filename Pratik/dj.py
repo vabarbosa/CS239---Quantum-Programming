@@ -1,9 +1,3 @@
-"""
-Created on Sat May  2 15:50:05 2020
-
-@author: sathe
-"""
-
 from pyquil import Program, get_qc
 from pyquil.quil import DefGate
 from pyquil.gates import X,H,MEASURE
@@ -24,6 +18,13 @@ def binary_add(s1,s2):
     Returns:
         s: String s given by s = s1 + s2 (of length n) containing only zeros and ones
     """
+    if type(s1) != str or type(s2) != str:  #If inputs are not strings, raise an error
+        raise ValueError('The inputs are not strings')
+    if sum([1 for x in s1 if (x != '0' and x != '1')]) > 0 or sum([1 for x in s2 if (x != '0' and x != '1')]) > 0:
+        raise ValueError('Input strings contain characters other than 0s and 1s') 
+    if len(s1) != len(s2):
+        raise ValueError('Input strings are not of the same length') 
+    
     x1 = np.array([int(i) for i in s1])
     x2 = np.array([int(i) for i in s2])
     x = (x1 + x2 ) % 2
@@ -40,8 +41,13 @@ def give_binary_string(z,n):
     Returns: 
         s: String of length n containing the binary representation of integer z.
     """
+    if type(z) != int or type(n) != int:
+        raise ValueError('Both arguments must be integers.')
+    
     s = bin(z)
     m = n + 2 - len(s)
+    if m < 0:
+        raise ValueError('z is greater than the 2 raised to n. Need to input a larger value of n') 
     s = s.replace("0b", '0' * m)
     return s 
 
@@ -56,6 +62,11 @@ def create_all_functions(n):
                             func_list_balanced[i,j] = 0 or 1, containing the value of f_i(j), where f_i = i^{th} function. 
         func_list_constant: ndarray with dimensions [2, n]. The two rows contain the two possible constant functions.
     """
+    if type(n) != int:
+        raise ValueError('The input should be an integer')
+    if n <= 0:
+        raise ValueError('Input a positive integer') 
+        
     N = 2**n
     list_of_numbers = list(range(N))
     comb = combinations(list_of_numbers, int(N/2))
@@ -90,7 +101,12 @@ def get_random_f(n):
         Calculate n-choose-r
         """
         return F(n) / F(r) / F(n-r)
-
+    
+    if type(n) != int:
+        raise ValueError('The input should be an integer')
+    if n <= 0:
+        raise ValueError('Input a positive integer') 
+        
     num_balanced = nCr(2**n, 2**(n-1))
     random_index = rd.randint(0, num_balanced+1)
     if random_index < num_balanced:
@@ -115,10 +131,18 @@ def create_Uf(f):
     Returns:
         Uf: ndarray of size [2**(n+1), 2**(n+1)], representing a unitary matrix.
     """
+    if type(f) != np.ndarray:
+        raise ValueError('Input the function in the form of an ndarray')
+    if any((x!= 0 and x != 1) for x in f.tolist()):
+        raise ValueError('The input function should only contain zeros and ones.')
+    
     two_raized_n = np.size(f)
     n = int(np.log2(two_raized_n))
+    if n != np.log2(two_raized_n):
+        raise ValueError("n must be a power of 2!")
+        
     N = 2 ** (n+1)
-    Uf = np.zeros([N,N], dtype = complex )
+    Uf = np.zeros([N,N], dtype = complex)
     
     for z in range(2**n):
         f_z = f[z]
@@ -141,6 +165,17 @@ def verify_dj_output(DJ_output, f):
     Returns:
         is_correct: bool (TRUE if the DJ output is correct, and FALSE otherwise)
     """
+    if type(f) != np.ndarray:
+        raise ValueError('Input the function in the form of an ndarray')
+    if any((x!= 0 and x != 1) for x in f.tolist()):
+        raise ValueError('The input function should only contain zeros and ones.')
+    if DJ_output != 0 and DJ_output != 1:
+        raise ValueError('The first argument should be an integer (0 or 1)')
+    two_raized_n = np.size(f)
+    n = int(np.log2(two_raized_n))
+    if n != np.log2(two_raized_n):
+        raise ValueError("n must be a power of 2!")
+        
     N = len(f)
     is_constant = (np.sum(f) == N or np.sum(f) == 0)
     
@@ -153,11 +188,10 @@ def verify_dj_output(DJ_output, f):
 #print(Uf)
 
 
-def DJ(Uf_quil_def, Uf_gate, n, time_out_val = 100):
+def DJ(Uf_quil_def, n, time_out_val = 100):
     """
     Deutsch-Jozsa algorithm: Determines if the given function is constant or balanced
     Args:
-        Uf_gate: gate object which acts on n+1 qubits
         Uf_quil_def: DefGate object corresponding to oracle Uf
         n: Integer, the length on input bit strings which f takes.
     
@@ -167,6 +201,11 @@ def DJ(Uf_quil_def, Uf_gate, n, time_out_val = 100):
     Returns: 
         Integer: 0 if function is balanced, and 1 if function is constant
     """
+    
+    if not isinstance(Uf_quil_def, DefGate):
+        raise ValueError("Uf_quil_def must be a gate definition!")
+        
+    Uf_gate = Uf_quil_def.get_constructor() # Get the gate constructor
     
     ## Define the circuit
     p = Program()
@@ -196,9 +235,39 @@ def DJ(Uf_quil_def, Uf_gate, n, time_out_val = 100):
         print("function is constant")
         return 1
     
+def run_DJ(f, time_out_val = 1000):
+    """
+    Deutsch-Jozsa algorithm: Determines if the given function is constant or balanced. Start to end execution.
+    Args:
+        f: ndarray of length N = 2**n, contining the values of function.
+    Kwargs:
+        time_out_val: Integer. Timeout in seconds.
+    Returns: 
+        Integer: 0 if function is balanced, and 1 if function is constant
+    """
+    if type(f) != np.ndarray:
+        raise ValueError('Input the function in the form of an ndarray')
+    if any((x!= 0 and x != 1) for x in f.tolist()):
+        raise ValueError('The input function should only contain zeros and ones.')
     
+    two_raized_n = np.size(f)
+    n = int(np.log2(two_raized_n))
+    if n != np.log2(two_raized_n):
+        raise ValueError("n must be a power of 2!")
+        
+    Uf = create_Uf(f)
+    Uf_quil_def = DefGate("Uf", Uf)
+    DJ_output = DJ(Uf_quil_def, n, 1000)
+    return DJ_output
 
-#%% Trial testing        
+#%% Trial testing     
+    
+n = 3
+f = get_random_f(n)
+Uf = create_Uf(f)
+run_DJ(f, n, time_out_val = 100)
+
+#%%
 
 n = 3
 f = get_random_f(n)
@@ -206,16 +275,17 @@ Uf = create_Uf(f)
 print("Done creating Uf matrix")
 
 Uf_quil_def = DefGate("Uf", Uf)  # Note: Uf_quil_def.matrix immediately gives the user the matrix representation of Uf!
-Uf_gate = Uf_quil_def.get_constructor() # Get the gate constructor
+
 
 start = time.time()
 
     
-DJ_output = DJ(Uf_quil_def, Uf_gate, n, 1000)
+DJ_output = DJ(Uf_quil_def, n, 1000)
 end = time.time()
 print(f)
 print("It took %i seconds to complete the simulation"%(end-start))
 verify_dj_output(DJ_output, f)
+
 #%% 
 
 
@@ -234,7 +304,7 @@ for ind, n in enumerate(n_list):
         Uf_quil_def = DefGate("Uf", Uf)
         Uf_gate = Uf_quil_def.get_constructor()
         start = time.time()
-        DJ_output = DJ(Uf_quil_def, Uf_gate, n, time_out_val)
+        DJ_output = DJ(Uf_quil_def, n, time_out_val)
         end = time.time()
         time_reqd_arr[ind, iter_ind] = end-start
         if not(verify_dj_output(DJ_output, f)):
@@ -288,7 +358,7 @@ for iter_ind in range(num_times):
     Uf_quil_def = DefGate("Uf", Uf)
     Uf_gate = Uf_quil_def.get_constructor()
     start = time.time()
-    DJ_output = DJ(Uf_quil_def, Uf_gate, n, time_out_val)
+    DJ_output = DJ(Uf_quil_def, n, time_out_val)
     end = time.time()
     time_array[iter_ind] = end - start
     if not(verify_dj_output(DJ_output, f)):
