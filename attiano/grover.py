@@ -11,40 +11,83 @@ from operator import add
 import time
 import matplotlib.pyplot as plt
 
+def run_grover(f):
+	"""
+	inputs: f - the oracle function
+
+	outputs: result - ket{x} s.t. f(x) = 1
+	"""
+	if(str(type(f))!="<class 'function'>"):
+		raise TypeError
+	n = len(inspect.signature(f).parameters)
+	#assume a=1 from problem statement
+	a = 1;
+	z0 = create_z0(n)
+	zf = create_zf(f,n)
+	z_0 = DefGate("Z0", z0)
+	z_f = DefGate("ZF", zf)
+	result, compile_time, run_time = grover(z_0,z_f,n,a)
+	if(not check_correctness(f,result,n)):
+		print("output of Grover didn't match the input, trying again")
+		timeout = 0
+		while((not check_correctness(f,result,n)) and timeout<50):
+			result, compile_time, run_time = grover(z_0,z_f,n,a)
+			timeout+=1;
+		if(timeout==50):
+			print("TIMEOUT: FAILED TO FIND CORRECT KET X")
+	return result
+		
+
+def convert_int_to_n_bit_string(integ, n):
+	"""
+	inputs: integer corresponding to x's unsigned value
+		    n is the number of bits
+
+	outputs: attempt_input - array of ints that represents an unsigned bit string
+	"""
+	attempt_input = [0] * n
+	for i in range(n):
+		attempt_input[i] = integ/(2**(n-i))
+		integ = integ%(2**(n-i))
+		
+	return attempt_input	
+
 def convert_n_bit_string_to_int(x,n):
 	"""
 	inputs: x - array of ints that represents an unsigned bit string
-		n is the number of bits
+		    n is the number of bits
 
 	outputs: integer corresponding to x's unsigned value
 	"""
 	integ = 0
 	for idx, val in enumerate(x):
-		integ += val*2^(n-idx-1)
+		integ += val*2**(n-idx-1)
 	return int(integ)
 
 
-def check_correctness(func,result):
+def check_correctness(func,result,n):
 	"""
-	inputs: func - np array of ints that represnts a function mapping with the index as input
-			result - np array of ints that represents an unsigned bit string
+	input: func - np array of ints that represnts a function mapping with the index as input
+		   result - np array of ints that represents an unsigned bit string
+		   n is the number of bits
 	
-	outputs: bool if the index that corresponds to result is 1, then f(result) = 1
+	output: bool if the index that corresponds to result is 1, then f(result) = 1
 	"""
 	if(str(type(func))!="<class 'list'>" and str(type(func))!="<class 'numpy.ndarray'>" and str(type(func))!="<class 'function'>"):
 		raise TypeError('input for func not a list, numpy array or a function')
-	x = convert_n_bit_string_to_int(result)
+	x = convert_n_bit_string_to_int(result,n)
 	if(str(type(func))=="<class 'function'>"):
-		return (func(x) == 1)
+		print(func(*result))
+		return (func(*result) == 1)
 	else:
 		return (func[x] == 1)
 
 
 def create_minus_gate(n):
 	"""
-	inputs: n (int) - number of qubits
+	input: n (int) - number of qubits
 	
-	outputs: minus (np array of ints) - NxN matrix with -1 on the diagonal
+	output: minus (np array of ints) - NxN matrix with -1 on the diagonal
 	"""
 	if(str(type(n))!="<class 'int'>"):
 		raise TypeError('input for n non-integer')
@@ -60,6 +103,7 @@ def create_minus_gate(n):
 def create_zf(f,n):
 	"""
 	input: int n = (number of qubits on which zf acts), array<int> f = function being encoded/evaluated 
+	
 	output: zf = (-1)^f(x)|x>, the identity matrix with -1 on the rows that f(x) returns 1
 	"""
 	if(str(type(n))!="<class 'int'>"):
@@ -74,7 +118,8 @@ def create_zf(f,n):
 
 	for i in range(N):
 		if(str(type(f))=="<class 'function'>"):
-			f_val = int(f(i))
+			x = convert_int_to_n_bit_string(i,n) 
+			f_val = int(f(*x))
 		else:
 			f_val = int(f[i])
 		if(f_val == 1):
@@ -84,7 +129,8 @@ def create_zf(f,n):
 	
 def create_z0(n):
 	"""
-	input: int n = (number of qubits on which zf acts), array<int> f = function being encoded/evaluated 
+	input: int n = (number of qubits on which zf acts), array<int> f = function being encoded/evaluated
+	
 	output: z0 = -|x> if |x> = 0^n else |x> the identity matrix with -1 on first row
 	"""
 	if(str(type(n))!="<class 'int'>"):
@@ -99,8 +145,8 @@ def create_z0(n):
 def all_f(n,a):
 	""" 
 	input: int n = number of qubits, int a = number of items that return 1 for function
-	output: list of functions (arrays that can be index with 'x' for function value 'f(x)')
-
+	
+	output: list of functions (arrays that can be index with 'x' for function value 'f(x)'
 	""" 
 	if(str(type(n))!="<class 'int'>"):
 		raise TypeError('input for n non-integer')	
@@ -121,9 +167,9 @@ def all_f(n,a):
 
 def calc_lim(a,n):
 	"""
-	inputs: int n = number of qubits, int a = number of items that return 1 for function
+	input: int n = number of qubits, int a = number of items that return 1 for function
 	
-	outputs: int k = number of iterations to run grovers algorithm
+	output: int k = number of iterations to run grovers algorithm
 	"""
 	if(str(type(n))!="<class 'int'>"):
 		raise TypeError('input for n non-integer')	
@@ -135,7 +181,8 @@ def calc_lim(a,n):
 	#heuristically determined if n<4 you overshoot if you round, and if n>4 you undershoot if you floor
 	#didnt test past n=6 as each trial took non-negligible time to compile and run
 	if n < 4:
-		k = math.floor(abs(((np.pi)/(4*theta)) - 0.5))
+		#k = math.floor(abs(((np.pi)/(4*theta)) - 0.5))
+		k = round(abs(((np.pi)/(4*theta)) - 0.5))
 	else:
 		k = round(abs(((np.pi)/(4*theta)) - 0.5))
 	return int(k)
@@ -196,19 +243,19 @@ def grover(z0,zf,n,a):
 	qc = get_qc(structure)
 	qc.compiler.client.timeout = 60000
 	
-	print("Starting compilation")
+	#print("Starting compilation")
 	start = time.time()
 	executable = qc.compile(p)
 	end = time.time()
 	compile_time = int((end - start) * 1000)
-	print("Compilation finished, time: %d ms"%compile_time)
+	#print("Compilation finished, time: %d ms"%compile_time)
 	
-	print("Starting quantum computer")
+	#print("Starting quantum computer")
 	start = time.time()
 	results = qc.run(executable)
 	end = time.time()
 	run_time = int((end - start) * 1000)
-	print("Quantum computer finished, Run-time: %d ms"%run_time)
+	#print("Quantum computer finished, Run-time: %d ms"%run_time)
 	
 	y = [ measurement for measurement in results[0] ]
 
@@ -230,7 +277,7 @@ class test_harness(unittest.TestCase):
 					z_0 = DefGate("Z0", z0)
 					z_f = DefGate("ZF", zf)
 					result_string, compile_time, run_time = grover(z_0,z_f,n,a)
-					result =  result and check_correctness(func,result_string)
+					result =  result and check_correctness(func,result_string,n)
 				self.assertTrue( result )
 		
 
@@ -270,7 +317,7 @@ if __name__== '__main__':
 				avg_compile += compile_time
 				avg_compute += run_time
 				print(result)
-				#check_correctness(func,result)
+				#print(check_correctness(func,result,n))
 			compute_times[ind, iter_ind] = avg_compute/len(all)
 			compile_times[ind, iter_ind] = avg_compile/len(all)
 			
