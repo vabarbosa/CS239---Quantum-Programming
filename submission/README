@@ -1,5 +1,7 @@
 # DJ
-In order to implement the Deutsch-Jozsa algorithm, first, import 
+First, import the module dj.py
+
+The function f: {0,1}^n --> {0,1} which is either constant or balanced, is taken as input in the form of a numpy array of length
 
 # BV
 
