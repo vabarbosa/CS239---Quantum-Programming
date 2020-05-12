@@ -1,0 +1,26 @@
+# DJ
+
+# BV
+
+# Simon
+
+to run simon, import the file
+
+>>> uf = create_Uf(f)
+>>> Uf_quil_def = DefGate("UF", uf)
+>>> compile_time, qc, executable = compile_simon(Uf_quil_def, n, time_out_val)
+>>> run_time, vectors_generated, s_calc = simon(n, qc, executable)
+>>> print(s_calc)
+
+Assuming f is an 2^n x n matrix representing the input to output of the function.
+It will create a gate definition then compile the program then run it.
+s_calc will be a list of integers representing the bitstring s. Note this assumes s != 0.
+In order to allow s as a possible secret, f(0) must be compared against f(s). If they're equal s_calc is correct, otherwise f is 1 to 1 and s = 0.
+
+To confirm s:
+>>> print(true_s(f, s))
+
+Output:
+The program outputs progress messages as it goes. It prints each y it measures. It interprets the measurements and calulates s. s is returned as above and can be checked as described as above.
+
+# Grover
