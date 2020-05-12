@@ -1,8 +1,7 @@
 # DJ
 First, import the module dj.py
 
-The function f: {0,1}^n --> {0,1} which is either constant or balanced, is taken as input in the form of a numpy array of length 2**n. Each element of f is an integer 0 or 1.
-
+The function f: {0,1}^n --> {0,1} which is either constant or balanced, is taken as input in the form of a numpy array of length 2**n. Each element of f is an integer 0 or 1. The output of f corresponding to a bit string s is stored at f[d(s)], where d(s) corresponds to the binary representation of string s. For example, for n=3, the value of f(011) will be stored at f[3], since the binary string 011 corresponds to the number 3.
 # BV
 
 # Simon
