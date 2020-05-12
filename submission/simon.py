@@ -458,11 +458,11 @@ def run_tests(npz_file):
     """
     time_out_val = 10000
     n_min = 1
-    n_max = 2
+    n_max = 3
     n_list = list(range(n_min,n_max+1))
 
-    num_compilation_trials = 2
-    num_run_trials = 2
+    num_compilation_trials = 5
+    num_run_trials = 5
     
     comp_time_arr = np.zeros((n_max-n_min)+1)
     run_time_arr = np.zeros((n_max-n_min)+1)
