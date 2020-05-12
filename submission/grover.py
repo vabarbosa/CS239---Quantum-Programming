@@ -181,8 +181,8 @@ def calc_lim(a,n):
 	#heuristically determined if n<4 you overshoot if you round, and if n>4 you undershoot if you floor
 	#didnt test past n=6 as each trial took non-negligible time to compile and run
 	if n < 4:
-		#k = math.floor(abs(((np.pi)/(4*theta)) - 0.5))
-		k = round(abs(((np.pi)/(4*theta)) - 0.5))
+		k = math.floor(abs(((np.pi)/(4*theta)) - 0.5))
+		#k = round(abs(((np.pi)/(4*theta)) - 0.5))
 	else:
 		k = round(abs(((np.pi)/(4*theta)) - 0.5))
 	return int(k)
