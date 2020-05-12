@@ -1,7 +1,7 @@
 # DJ
 First, import the module dj.py
 
-The function f: {0,1}^n --> {0,1} which is either constant or balanced, is taken as input in the form of a numpy array of length
+The function f: {0,1}^n --> {0,1} which is either constant or balanced, is taken as input in the form of a numpy array of length 2**n. Each element of f is an integer 0 or 1.
 
 # BV
 
