@@ -70,13 +70,15 @@ This assumes no access to f. s_calc must be checked or it must be known before h
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # Grover
 
-Simple-use example:
+Simple-use case example:
 
 from grover import run_grover
 result, compile_time, compute_time = run_grover(f)
 
 #(assumes you have an oracle function f that has each bit as a different argument to f from LSB to MSB)
 #(e.g. f(a,b,c) a is LSB c is MSB)
+#->assumes f has n inputs and each input is a 0 or 1
+
 
 grover.py contains a set of methods needed to run grovers algorithm in pyquil.
 	
