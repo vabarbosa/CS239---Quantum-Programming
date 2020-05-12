@@ -1,5 +1,7 @@
 grover.py contains a set of methods needed to run grovers algorithm in pyquil.
 
+	Check_correctness: checks to make sure the f(x)=1 for the x output from Grover's algorithm
+	Convert_n_bit_string_to_int: converts an int to an unsigned representation of an int
 	Create_minus_gate: makes a unitary transformation that maps |x> to -|x>
 	Create_zf: zf = (-1)^f(x)|x>, returns the identity matrix with -1 on the corresponding rows that f(x) returns 1
 	Create_z0: z0 = -|x> if |x> = 0^n else |x>, returns the identity matrix with -1 on first row
