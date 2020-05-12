@@ -5,7 +5,13 @@ The function f: {0,1}^n --> {0,1} which is either constant or balanced, is taken
 
 There are two ways to implement the DJ algorithm:
 1. (Recommended) For a high level implementation, call the function run_DJ(f). This function takes f as input, obtains the oracle Uf, creates and runs the circuit, and interprets the results. It returns 1 if it determines that f is constant, and 0 otherwise.
-
+2. For a lower level implementation, follow this sequence:
+	>> Uf = create_Uf(f)
+		Creates the unitary matrix Uf corresponding to function f.
+	>> f_quil_def = DefGate("Uf", Uf)
+		Create a gate object using Uf,
+	>> DJ(Uf_quil_def, n) 
+		Pass the oracle gate, and the value of n in order to execute the DJ circuit. The function will return 1 if it determines that f is constant, and 0 otherwise. It will also print out its conclusion in words.
 # BV
 
 # Simon
