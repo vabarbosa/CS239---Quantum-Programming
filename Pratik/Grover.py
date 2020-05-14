@@ -1,5 +1,3 @@
-
-
 from pyquil import Program, get_qc
 from pyquil.quil import DefGate
 from pyquil.gates import X,H,MEASURE
@@ -265,4 +263,3 @@ for trial_ind in range(num_trials):
 numerical_success_rate = num_correct / num_trials
 k , prob = get_k_g(n, a)
 print(" Numerical success rate = %f"%numerical_success_rate)
-print(" Theoretical success rate = %f" %prob)

@@ -176,21 +176,20 @@ def calc_lim(a,n):
 	if(str(type(a))!="<class 'int'>"):
 		raise TypeError('input for a non-integer')
 	N = 2**n
-	#theta = np.arcsin(a/N)
-	theta = a/np.sqrt(N)
-	#heuristically determined if n<4 you overshoot if you round, and if n>4 you undershoot if you floor
-	#didnt test past n=6 as each trial took non-negligible time to compile and run
-	if n < 4:
-		k = math.floor(abs(((np.pi)/(4*theta)) - 0.5))
-		#k = round(abs(((np.pi)/(4*theta)) - 0.5))
-	else:
-		k = round(abs(((np.pi)/(4*theta)) - 0.5))
-	return int(k)
+	theta = np.arcsin(a/np.sqrt(N))
+	
+	k_approx = ((np.pi/(4*theta)) - 0.5)
+	
+	k_arr = np.array([np.ceil(k_approx),np.floor(k_approx)])
+	
+	prob_arr = np.sin((2*k_arr + 1) * theta ) ** 2
+	max = np.argmax(prob_arr)
+	
+	return int(k_arr[max]), prob_arr[max]
 
 def grover(z0,zf,n,a):
 	#f is the function we oracle call on
 	#assum input is n length bit string, with each bit value as a different input
-	
 	
 	#try every possible input - brute force, if f(x) = return 1, otherwise return 0
 	if(str(type(n))!="<class 'int'>"):
@@ -220,20 +219,21 @@ def grover(z0,zf,n,a):
 	num_arr = list(range(n))
 
 	#2. apply G = -(H^n)zo(H^n)zf k times
-	k = calc_lim(a,n)
+	k, prob = calc_lim(a,n)
+	
 
 	for i in range(k):
 		#Apply zf
 		p += z_f(*num_arr)
 		#Hadamard each qubit
-		for i in range(n):
-			p += H(i)
+		for j in range(n):
+			p += H(j)
 		#apply z0
 		p += z_0(*num_arr)
 		#-Hadamard each qubit
-		for i in range(n):
-			p += H(i)
-			p += minus_gate(i)
+		for j in range(n):
+			p += H(j)
+			p += minus_gate(j)
 		#measure each qubit
 		for qubit in range(n):
 			p += MEASURE(qubit, ro[qubit])
@@ -286,21 +286,43 @@ if __name__== '__main__':
 	num_inputs = len(sys.argv)
 	inputs = sys.argv 
 	
+	# input_list = [1,2,3,4]
 	
+	# act_fail = [50.0,0.0,55.6,68.875]
+	# theo_fail = [49.9999994,0.0,5.46875,3.86810302735]
+	
+	# fig = plt.figure(figsize=(16,10))
 
-	#benchmarking code
+	
+	# plt.plot(input_list, act_fail, ls = '-', markersize = 15, marker = '.',label = 'M')
+	# plt.plot(input_list, theo_fail,ls = '-', color = 'r', markersize = 15, marker = '.',label = 'M')
+	# plt.legend(['Empirical', 'Theoretical'], loc='upper left')#, ls = '--'
+	# plt.title('Failure rate for Grovers algorithm, n=1,2,3,4, a = 1, over 1000 trials', fontsize=25)
+	# plt.xlabel('n = num qubits',fontsize=20)
+	# plt.ylabel('Probability of failure',fontsize=20)
+	# plt.xticks(fontsize=15)
+	# plt.yticks(fontsize=15)
+	# fig.savefig('grover_failure.png', bbox_inches='tight')
+	
+	for i in range(1,7):
+		k, prob = calc_lim(1,i)
+		print("n=%d, K=%s, prob_success=%s"%(i,str(k),str(prob)))
+	
+	# benchmarking/testing code
 	time_out_val = 10000
-	#set qubit range
-	n_min = 1
-	n_max = 6
+	# set qubit range
+	n_min = 3
+	n_max = 3
 	n_list = list(range(n_min,n_max+1))
-	#num_times increases the number of trials time averaged over
-	#set equal to 1 as I average over all the possible functions for a given n
-	num_times = 1
+	# num_times increases the number of trials time averaged over
+	# set equal to 1 as I average over all the possible functions for a given n
+	num_times = 100
 	compile_times = np.zeros([(n_max-n_min)+1, num_times])
 	compute_times = np.zeros([(n_max-n_min)+1, num_times])
 
-	#compute average compile and compute time for all functions for a range of n values and a given 'a'
+	# compute average compile and compute time for all functions for a range of n values and a given 'a'
+	failure_count = 0
+	num_trials = 0 
 	for ind, n in enumerate(n_list):
 		for iter_ind in range(num_times):
 			a = 1
@@ -308,7 +330,8 @@ if __name__== '__main__':
 			avg_compute = 0
 			avg_compile = 0
 			for func in all:
-				print(func)
+				num_trials+=1
+				# print("func%s"%str(func))
 				z0 = create_z0(n)
 				zf = create_zf(func,n)
 				z_0 = DefGate("Z0", z0)
@@ -316,97 +339,109 @@ if __name__== '__main__':
 				result, compile_time, run_time = grover(z_0,z_f,n,a)
 				avg_compile += compile_time
 				avg_compute += run_time
-				print(result)
-				#print(check_correctness(func,result,n))
+				# print("result: %s" % str(result))
+				# print(check_correctness(func,result,n))
+				if(not check_correctness(func,result,n)):
+					failure_count+=1;
 			compute_times[ind, iter_ind] = avg_compute/len(all)
 			compile_times[ind, iter_ind] = avg_compile/len(all)
+			if(num_trials == 100):
+				break
+		if(num_trials == 100):
+			break
+	
+	failure_prob = failure_count/num_trials * 100
+	print("failure probability for n=%d:"%n)
+	print(failure_prob)
+	print("failure count: %d out of %d"%(failure_count,num_trials))
+
 			
-	#testing for uf computation time at a fixed n
-	num_funcs = 16 #64 is (4 qubits choose 1) -> 2^4 choose 1 -> number of possible functions with a=2
-	input_list = list(range(num_funcs))
-	uf_compute_times = np.zeros([num_funcs,num_times])
-	for iter_ind in range(num_times):
-		a = 1
-		n = 4
-		all = all_f(n,a)
-		for ind,func in enumerate(all):
-			print(func)
-			z0 = create_z0(n)
-			zf = create_zf(func,n)
-			z_0 = DefGate("Z0", z0)
-			z_f = DefGate("ZF", zf)
-			result, compile_time, run_time = grover(z_0,z_f,n,a)
-			print(result)
-			uf_compute_times[ind, iter_ind] = run_time
+	# # testing for uf computation time at a fixed n
+	# num_funcs = 16 #64 is (4 qubits choose 1) -> 2^4 choose 1 -> number of possible functions with a=2
+	# input_list = list(range(num_funcs))
+	# uf_compute_times = np.zeros([num_funcs,num_times])
+	# for iter_ind in range(num_times):
+		# a = 1
+		# n = 4
+		# all = all_f(n,a)
+		# for ind,func in enumerate(all):
+			# print(func)
+			# z0 = create_z0(n)
+			# zf = create_zf(func,n)
+			# z_0 = DefGate("Z0", z0)
+			# z_f = DefGate("ZF", zf)
+			# result, compile_time, run_time = grover(z_0,z_f,n,a)
+			# print(result)
+			# uf_compute_times[ind, iter_ind] = run_time
 	
-	#%% Save the data
+	# # %% Save the data
 
-	np.savez('grover_benchmarking.npz', n_list = n_list,compile_times = compile_times,compute_times = compute_times)
-	np.savez('grover_uf.npz', input_list = input_list,uf_compute_times=uf_compute_times)
+	# np.savez('grover_benchmarking.npz', n_list = n_list,compile_times = compile_times,compute_times = compute_times)
+	# np.savez('grover_uf.npz', input_list = input_list,uf_compute_times=uf_compute_times)
 	   
-	#%% Load data
+	# # %% Load data
 
-	data = np.load('grover_benchmarking.npz')
-	n_list = data['n_list']
-	compilation_times = data['compile_times']
-	computation_times = data['compute_times']
-	uf_data = np.load('grover_uf.npz')
-	input_list = uf_data['input_list']
-	uf_compute_times = uf_data['uf_compute_times']
+	# data = np.load('grover_benchmarking.npz')
+	# n_list = data['n_list']
+	# compilation_times = data['compile_times']
+	# computation_times = data['compute_times']
+	# uf_data = np.load('grover_uf.npz')
+	# input_list = uf_data['input_list']
+	# uf_compute_times = uf_data['uf_compute_times']
 
-	#%%
-	avg_time_compile = np.sum(compilation_times,1)/np.shape(compilation_times)[1]
-	avg_time_compute = np.sum(computation_times,1)/np.shape(computation_times)[1]
+	# # %%
+	# avg_time_compile = np.sum(compilation_times,1)/np.shape(compilation_times)[1]
+	# avg_time_compute = np.sum(computation_times,1)/np.shape(computation_times)[1]
 
-	#%% Plot and save 
+	# # %% Plot and save 
 
-	#plot compilation time vs n
-	plt.rcParams["font.family"] = "serif"
-	fig = plt.figure(figsize=(16,10))
+	# # plot compilation time vs n
+	# plt.rcParams["font.family"] = "serif"
+	# fig = plt.figure(figsize=(16,10))
 
-	z = np.polyfit(n_list, avg_time_compile, 10)
-	p = np.poly1d(z)
+	# z = np.polyfit(n_list, avg_time_compile, 10)
+	# p = np.poly1d(z)
 
-	plt.plot(np.linspace(n_list[0], n_list[-1] + 0.1, 100), p(np.linspace(n_list[0], n_list[-1] + 0.1, 100)), ls = '-', color = 'r')
-	plt.plot(n_list, avg_time_compile, ls = '', markersize = 15, marker = '.',label = 'M') #, ls = '--'
-	plt.title('Compilation time scaling for Grovers algorithm, a = 1', fontsize=25)
-	plt.xlabel('n (bit string length)',fontsize=20)
-	plt.ylabel('Average time of compilation (ms)',fontsize=20)
-	plt.xticks(fontsize=15)
-	plt.yticks(fontsize=15)
+	# plt.plot(np.linspace(n_list[0], n_list[-1] + 0.1, 100), p(np.linspace(n_list[0], n_list[-1] + 0.1, 100)), ls = '-', color = 'r')
+	# plt.plot(n_list, avg_time_compile, ls = '', markersize = 15, marker = '.',label = 'M') #, ls = '--'
+	# plt.title('Compilation time scaling for Grovers algorithm, a = 1', fontsize=25)
+	# plt.xlabel('n (bit string length)',fontsize=20)
+	# plt.ylabel('Average time of compilation (ms)',fontsize=20)
+	# plt.xticks(fontsize=15)
+	# plt.yticks(fontsize=15)
 
 
-	fig.savefig('Figures/grover_compile_a1.png', bbox_inches='tight')
+	# fig.savefig('Figures/grover_compile_a1.png', bbox_inches='tight')
 	
 	
-	#plot computation time vs n
+	# # plot computation time vs n
 
-	fig = plt.figure(figsize=(16,10))
+	# fig = plt.figure(figsize=(16,10))
 
-	z = np.polyfit(n_list, avg_time_compute, 10)
-	p = np.poly1d(z)
+	# z = np.polyfit(n_list, avg_time_compute, 10)
+	# p = np.poly1d(z)
 
-	plt.plot(np.linspace(n_list[0], n_list[-1] + 0.1, 100), p(np.linspace(n_list[0], n_list[-1] + 0.1, 100)), ls = '-', color = 'r')
-	plt.plot(n_list, avg_time_compute, ls = '', markersize = 15, marker = '.',label = 'M') #, ls = '--'
-	plt.title('Compilation time scaling for Grovers algorithm, a = 1', fontsize=25)
-	plt.xlabel('n (bit string length)',fontsize=20)
-	plt.ylabel('Average time of computation (ms)',fontsize=20)
-	plt.xticks(fontsize=15)
-	plt.yticks(fontsize=15)
+	# plt.plot(np.linspace(n_list[0], n_list[-1] + 0.1, 100), p(np.linspace(n_list[0], n_list[-1] + 0.1, 100)), ls = '-', color = 'r')
+	# plt.plot(n_list, avg_time_compute, ls = '', markersize = 15, marker = '.',label = 'M') #, ls = '--'
+	# plt.title('Compilation time scaling for Grovers algorithm, a = 1', fontsize=25)
+	# plt.xlabel('n (bit string length)',fontsize=20)
+	# plt.ylabel('Average time of computation (ms)',fontsize=20)
+	# plt.xticks(fontsize=15)
+	# plt.yticks(fontsize=15)
 
 
-	fig.savefig('Figures/grover_compute_a1.png', bbox_inches='tight')
-
-	
-	#plot computation time vs uf for n= 4
-
-	fig = plt.figure(figsize=(16,10))
+	# fig.savefig('Figures/grover_compute_a1.png', bbox_inches='tight')
 
 	
-	plt.plot(input_list, uf_compute_times, ls = '', markersize = 15, marker = '.',label = 'M') #, ls = '--'
-	plt.title('Uf time scaling for Grovers algorithm, n=4, a = 1', fontsize=25)
-	plt.xlabel('U_f (16 possible funcs)',fontsize=20)
-	plt.ylabel('Average time of computation (ms)',fontsize=20)
-	plt.xticks(fontsize=15)
-	plt.yticks(fontsize=15)
-	fig.savefig('Figures/grover_compute_uf.png', bbox_inches='tight')
+	# # plot computation time vs uf for n= 4
+
+	# fig = plt.figure(figsize=(16,10))
+
+	
+	# plt.plot(input_list, uf_compute_times, ls = '', markersize = 15, marker = '.',label = 'M') #, ls = '--'
+	# plt.title('Uf time scaling for Grovers algorithm, n=4, a = 1', fontsize=25)
+	# plt.xlabel('U_f (16 possible funcs)',fontsize=20)
+	# plt.ylabel('Average time of computation (ms)',fontsize=20)
+	# plt.xticks(fontsize=15)
+	# plt.yticks(fontsize=15)
+	# fig.savefig('Figures/grover_compute_uf.png', bbox_inches='tight')
