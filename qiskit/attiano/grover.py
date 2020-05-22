@@ -1,412 +1,380 @@
 import sys
 import inspect
-import unittest
-from pyquil import Program, get_qc
-from pyquil.gates import *
-from pyquil.quil import DefGate
-from itertools import combinations 
+from qiskit import(
+  QuantumCircuit,
+  execute,
+  Aer)
+from qiskit.visualization import plot_histogram
+from qiskit.quantum_info.operators import Operator
+from itertools import combinations
+import time, random
 import numpy as np
 import math
 from operator import add
-import time
+import operator
 import matplotlib.pyplot as plt
 
-def run_grover(f):
-	"""
-	inputs: f - the oracle function
+class grover:
 
-	outputs: result - ket{x} s.t. f(x) = 1
-	"""
-	if(str(type(f))!="<class 'function'>"):
-		raise TypeError
-	n = len(inspect.signature(f).parameters)
-	#assume a=1 from problem statement
-	a = 1;
-	z0 = create_z0(n)
-	zf = create_zf(f,n)
-	z_0 = DefGate("Z0", z0)
-	z_f = DefGate("ZF", zf)
-	result, compile_time, run_time = grover(z_0,z_f,n,a)
-	if(not check_correctness(f,result,n)):
-		print("output of Grover didn't match the input, trying again")
-		timeout = 0
-		while((not check_correctness(f,result,n)) and timeout<50):
-			result, compile_time, run_time = grover(z_0,z_f,n,a)
-			timeout+=1;
-		if(timeout==50):
-			print("TIMEOUT: FAILED TO FIND CORRECT KET X")
-	return result
-		
+	def run_grover(self,f,n,a):
+		"""
+		inputs: f - the oracle function
 
-def convert_int_to_n_bit_string(integ, n):
-	"""
-	inputs: integer corresponding to x's unsigned value
-		    n is the number of bits
+		outputs: result - ket{x} s.t. f(x) = 1
+		"""
 
-	outputs: attempt_input - array of ints that represents an unsigned bit string
-	"""
-	attempt_input = [0] * n
-	for i in range(n):
-		attempt_input[i] = integ/(2**(n-i))
-		integ = integ%(2**(n-i))
-		
-	return attempt_input	
-
-def convert_n_bit_string_to_int(x,n):
-	"""
-	inputs: x - array of ints that represents an unsigned bit string
-		    n is the number of bits
-
-	outputs: integer corresponding to x's unsigned value
-	"""
-	integ = 0
-	for idx, val in enumerate(x):
-		integ += val*2**(n-idx-1)
-	return int(integ)
-
-
-def check_correctness(func,result,n):
-	"""
-	input: func - np array of ints that represnts a function mapping with the index as input
-		   result - np array of ints that represents an unsigned bit string
-		   n is the number of bits
-	
-	output: bool if the index that corresponds to result is 1, then f(result) = 1
-	"""
-	if(str(type(func))!="<class 'list'>" and str(type(func))!="<class 'numpy.ndarray'>" and str(type(func))!="<class 'function'>"):
-		raise TypeError('input for func not a list, numpy array or a function')
-	x = convert_n_bit_string_to_int(result,n)
-	if(str(type(func))=="<class 'function'>"):
-		print(func(*result))
-		return (func(*result) == 1)
-	else:
-		return (func[x] == 1)
-
-
-def create_minus_gate(n):
-	"""
-	input: n (int) - number of qubits
-	
-	output: minus (np array of ints) - NxN matrix with -1 on the diagonal
-	"""
-	if(str(type(n))!="<class 'int'>"):
-		raise TypeError('input for n non-integer')
-	N = 2**n
-	
-	minus = np.identity(N)
-
-	for i in range(N):
-		minus[i][i] = -1
-	
-	return minus
-
-def create_zf(f,n):
-	"""
-	input: int n = (number of qubits on which zf acts), array<int> f = function being encoded/evaluated 
-	
-	output: zf = (-1)^f(x)|x>, the identity matrix with -1 on the rows that f(x) returns 1
-	"""
-	if(str(type(n))!="<class 'int'>"):
-		raise TypeError('input for n non-integer')
-	if(str(type(f))!="<class 'list'>" and str(type(f))!="<class 'numpy.ndarray'>" and str(type(f))!="<class 'function'>"):
-		raise TypeError('input for f not a list, numpy array or a function')
-
-		
-	N = 2**n
-
-	zf = np.identity(N)
-
-	for i in range(N):
-		if(str(type(f))=="<class 'function'>"):
-			x = convert_int_to_n_bit_string(i,n) 
-			f_val = int(f(*x))
-		else:
-			f_val = int(f[i])
-		if(f_val == 1):
-			zf[i,i] = -1
-		
-	return zf
-	
-def create_z0(n):
-	"""
-	input: int n = (number of qubits on which zf acts), array<int> f = function being encoded/evaluated
-	
-	output: z0 = -|x> if |x> = 0^n else |x> the identity matrix with -1 on first row
-	"""
-	if(str(type(n))!="<class 'int'>"):
-		raise TypeError('input for n non-integer')
-	N = 2**(n)
-
-	z0 = np.identity(N)
-	z0[0][0] = -1
-
-	return z0
-
-def all_f(n,a):
-	""" 
-	input: int n = number of qubits, int a = number of items that return 1 for function
-	
-	output: list of functions (arrays that can be index with 'x' for function value 'f(x)'
-	""" 
-	if(str(type(n))!="<class 'int'>"):
-		raise TypeError('input for n non-integer')	
-	if(str(type(a))!="<class 'int'>"):
-		raise TypeError('input for a non-integer')
-	N = 2**n
-	func_inputs = range(N)
-	comb = combinations(func_inputs, a)
-	func_list = []
-
-	for combination in comb:
-		out_list = np.zeros(N)
-		for i in combination:
-			out_list[i] = 1
-		func_list.append(out_list)
-		
-	return func_list
-
-def calc_lim(a,n):
-	"""
-	input: int n = number of qubits, int a = number of items that return 1 for function
-	
-	output: int k = number of iterations to run grovers algorithm
-	"""
-	if(str(type(n))!="<class 'int'>"):
-		raise TypeError('input for n non-integer')	
-	if(str(type(a))!="<class 'int'>"):
-		raise TypeError('input for a non-integer')
-	N = 2**n
-	#theta = np.arcsin(a/N)
-	theta = a/np.sqrt(N)
-	#heuristically determined if n<4 you overshoot if you round, and if n>4 you undershoot if you floor
-	#didnt test past n=6 as each trial took non-negligible time to compile and run
-	if n < 4:
-		#k = math.floor(abs(((np.pi)/(4*theta)) - 0.5))
-		k = round(abs(((np.pi)/(4*theta)) - 0.5))
-	else:
-		k = round(abs(((np.pi)/(4*theta)) - 0.5))
-	return int(k)
-
-def grover(z0,zf,n,a):
-	#f is the function we oracle call on
-	#assum input is n length bit string, with each bit value as a different input
-	
-	
-	#try every possible input - brute force, if f(x) = return 1, otherwise return 0
-	if(str(type(n))!="<class 'int'>"):
-		raise TypeError('input for n non-integer')	
-	if(str(type(a))!="<class 'int'>"):
-		raise TypeError('input for a non-integer')
-	if(str(type(zf))!="<class 'pyquil.quilbase.DefGate'>"):
-		raise TypeError('input for zf not a pyquil gate definition')
-	if(str(type(z0))!="<class 'pyquil.quilbase.DefGate'>"):
-		raise TypeError('input for z0 not a pyquil gate definition')
-	z_0 = z0.get_constructor()
-	z_f = zf.get_constructor()
-	minus = create_minus_gate(1)
-	minus_def = DefGate("MINUS", minus)
-	minus_gate = minus_def.get_constructor()
-	p = Program()
-	p += zf
-	p += z0
-	p += minus_def
-	ro = p.declare('ro', 'BIT', n)
-
-	#1. Hadamard each qubit
-	for i in range(n):
-		p += H(i)
-
-	#setup inputs to multi-bit gates
-	num_arr = list(range(n))
-
-	#2. apply G = -(H^n)zo(H^n)zf k times
-	k = calc_lim(a,n)
-
-	for i in range(k):
-		#Apply zf
-		p += z_f(*num_arr)
-		#Hadamard each qubit
-		for i in range(n):
-			p += H(i)
-		#apply z0
-		p += z_0(*num_arr)
-		#-Hadamard each qubit
-		for i in range(n):
-			p += H(i)
-			p += minus_gate(i)
-		#measure each qubit
-		for qubit in range(n):
-			p += MEASURE(qubit, ro[qubit])
+		gate = self.create_G(f,n)
+		G = Operator(gate)
+		result, run_time = self.grover(G,n,a)
+		# print(result)
+		# if(not self.check_correctness(f,result,n)):
+			# print("output of Grover didn't match the input, try again")
+		return result, run_time
 			
-	#setup quantum computer
-	structure = "%dq-qvm" %(n)
-	qc = get_qc(structure)
-	qc.compiler.client.timeout = 60000
-	
-	#print("Starting compilation")
-	start = time.time()
-	executable = qc.compile(p)
-	end = time.time()
-	compile_time = int((end - start) * 1000)
-	#print("Compilation finished, time: %d ms"%compile_time)
-	
-	#print("Starting quantum computer")
-	start = time.time()
-	results = qc.run(executable)
-	end = time.time()
-	run_time = int((end - start) * 1000)
-	#print("Quantum computer finished, Run-time: %d ms"%run_time)
-	
-	y = [ measurement for measurement in results[0] ]
+
+	def convert_int_to_n_bit_string(self,integ, n):
+		"""
+		inputs: integer corresponding to x's unsigned value
+				n is the number of bits
+
+		outputs: attempt_input - array of ints that represents an unsigned bit string
+		"""
+		attempt_input = [0] * n
+		for i in range(n):
+			attempt_input[i] = integ/(2**(n-i))
+			integ = integ%(2**(n-i))
+			
+		return attempt_input	
+
+	def convert_n_bit_string_to_int(self,x,n):
+		"""
+		inputs: x - array of ints that represents an unsigned bit string
+				n is the number of bits
+
+		outputs: integer corresponding to x's unsigned value
+		"""
+		integ = 0
+		for idx, val in enumerate(x):
+			integ += val*2**(n-idx-1)
+		return int(integ)
 
 
-
-	return y, compile_time, run_time
-
-#test code	
-class test_harness(unittest.TestCase):
-	
-	def test_correct(self):
-		for a in range(1,3): 
-			for n in range(1,5):
-				all = all_f(n,a)
-				result = True
-				for func in all:
-					z0 = create_z0(n)
-					zf = create_zf(func,n)
-					z_0 = DefGate("Z0", z0)
-					z_f = DefGate("ZF", zf)
-					result_string, compile_time, run_time = grover(z_0,z_f,n,a)
-					result =  result and check_correctness(func,result_string,n)
-				self.assertTrue( result )
+	def check_correctness(self,func,result,n):
+		"""
+		input: func - np array of ints that represnts a function mapping with the index as input
+			   result - np array of ints that represents an unsigned bit string
+			   n is the number of bits
 		
+		output: bool if the index that corresponds to result is 1, then f(result) = 1
+		"""
+		if(str(type(func))!="<class 'list'>" and str(type(func))!="<class 'numpy.ndarray'>" and str(type(func))!="<class 'function'>"):
+			raise TypeError('input for func not a list, numpy array or a function')
+		
+		
+		x = self.convert_n_bit_string_to_int(result,n)
+		
+		
+		if(str(type(func))=="<class 'function'>"):
+			return (func(*result) == 1)
+		else:
+			return (func[x] == 1)
+
+
+	def all_f(self,n,a):
+		""" 
+		input: int n = number of qubits, int a = number of items that return 1 for function
+		
+		output: list of functions (arrays that can be indexed with 'x' for function value 'f(x)'
+		""" 
+		if(str(type(n))!="<class 'int'>"):
+			raise TypeError('input for n non-integer')	
+		if(str(type(a))!="<class 'int'>"):
+			raise TypeError('input for a non-integer')
+		N = 2**n
+		func_inputs = range(N)
+		comb = combinations(func_inputs, a)
+		func_list = []
+
+		for combination in comb:
+			out_list = np.zeros(N)
+			for i in combination:
+				out_list[i] = 1
+			func_list.append(out_list)
+			
+		return func_list
+
+	def calc_lim(self, a,n):
+		"""
+		input: int n = number of qubits, int a = number of items that return 1 for function
+
+		output: int k = number of iterations to run grovers algorithm
+		"""
+		if(str(type(n))!="<class 'int'>"):
+			raise TypeError('input for n non-integer')	
+		if(str(type(a))!="<class 'int'>"):
+			raise TypeError('input for a non-integer')
+
+		N = 2**n
+		theta = np.arcsin(np.sqrt(a/N))
+		
+		k_approx = ((np.pi/(4*theta)) - (1/2))
+		
+		k_arr = np.array([np.ceil(k_approx),np.floor(k_approx)])
+		
+		prob_arr = np.sin((2*k_arr + 1) * theta ) ** 2
+		max = np.argmax(prob_arr)
+		
+		return int(k_arr[max]), prob_arr[max]
+		
+	def H_tensored(self,n):
+		""" Returns the matrix corresponding to the tensor product of n number of Hadamard gates
+		Args:
+			n: Integer
+		Returns:
+			ndarray of size [2**n, 2**n]
+		"""
+		H = 1/np.sqrt(2) * np.array([[-1,1],[1,1]])
+		n = n - 1
+		H_n = H
+		while n > 0:
+			H_n = np.kron(H_n, H)
+			n -= 1
+		return H_n
+    
+		
+	def create_G(self,f,n):
+		"""
+		Given a function f:{0,1}^n ---> {0,1}, creates and returns the corresponding Grover operator G (unitary matrix)
+		Args:
+			f: ndarray of length 2**n, consisting of integers 0 and 1
+		Returns:
+			G: ndarray of size [2**(n+1), 2**(n+1)], representing a unitary matrix.
+		"""
+		N = 2**n
+		
+		G = np.zeros([N,N], dtype = complex)
+		Zf = np.diag([(-1)**f[i] for i in reversed(range(N))])
+		Z0 = np.eye(N)
+		Z0[N-1,N-1] = -1
+		
+		
+		H_n = self.H_tensored(n)
+		G = - H_n @ Z0 @ H_n @ Zf
+		
+		return G
+
+	def grover(self,G,n,a):
+		num_shots = 1000
+		backend='qasm_simulator'
+		
+		#f is the function we oracle call on
+		#assum input is n length bit string, with each bit value as a different input
+		
+		
+		#try every possible input - brute force, if f(x) = return 1, otherwise return 0
+		if(str(type(n))!="<class 'int'>"):
+			raise TypeError('input for n non-integer')	
+		if(str(type(a))!="<class 'int'>"):
+			raise TypeError('input for a non-integer')
+		
+		circuit = QuantumCircuit(n, n)
+
+		#1. Hadamard each qubit
+		for i in range(n):
+			circuit.h(i)
+
+		#setup inputs to multi-bit gates
+		num_arr = list(range(n))
+
+		#2. apply G = -(H^n)zo(H^n)zf k times
+		k , prob = self.calc_lim(a,n)
+		for iter in range(k):
+			circuit.append(G,range(n))
+		
+		#measure each qubit
+		circuit.measure(range(n), range(n))
+				
+		#setup quantum computer
+		simulator = Aer.get_backend(backend)
+		
+		start = time.time()
+		job = execute(circuit, simulator, shots=num_shots)
+		end = time.time()
+		
+		run_time = int((end - start) * 1000)
+		result = job.result()
+		counts = result.get_counts(circuit)
+
+		y = list(max(counts, key = lambda key: counts[key]))
+		print("y:")
+		print(y)
+		print(" ")
+		print("numerical_prob:%.2f"%(max(counts.values())/num_shots))
+
+		# y = y[::-1] #reverse output string for endianess
+
+
+		return [int(char) for char in y][::-1], run_time
 
 
 if __name__== '__main__':
 	num_inputs = len(sys.argv)
-	inputs = sys.argv 
+	inputs = sys.argv
 	
+	g = grover()
 	
-
 	#benchmarking code
-	time_out_val = 10000
-	#set qubit range
-	n_min = 1
-	n_max = 6
-	n_list = list(range(n_min,n_max+1))
-	#num_times increases the number of trials time averaged over
-	#set equal to 1 as I average over all the possible functions for a given n
-	num_times = 1
-	compile_times = np.zeros([(n_max-n_min)+1, num_times])
-	compute_times = np.zeros([(n_max-n_min)+1, num_times])
-
-	#compute average compile and compute time for all functions for a range of n values and a given 'a'
-	for ind, n in enumerate(n_list):
-		for iter_ind in range(num_times):
-			a = 1
-			all = all_f(n,a)
-			avg_compute = 0
-			avg_compile = 0
-			for func in all:
-				print(func)
-				z0 = create_z0(n)
-				zf = create_zf(func,n)
-				z_0 = DefGate("Z0", z0)
-				z_f = DefGate("ZF", zf)
-				result, compile_time, run_time = grover(z_0,z_f,n,a)
-				avg_compile += compile_time
-				avg_compute += run_time
-				print(result)
-				#print(check_correctness(func,result,n))
-			compute_times[ind, iter_ind] = avg_compute/len(all)
-			compile_times[ind, iter_ind] = avg_compile/len(all)
-			
-	#testing for uf computation time at a fixed n
-	num_funcs = 16 #64 is (4 qubits choose 1) -> 2^4 choose 1 -> number of possible functions with a=2
-	input_list = list(range(num_funcs))
-	uf_compute_times = np.zeros([num_funcs,num_times])
-	for iter_ind in range(num_times):
-		a = 1
-		n = 4
-		all = all_f(n,a)
-		for ind,func in enumerate(all):
+	# n_min = 1
+	# n_max = 10
+	# n_list = list(range(n_min,n_max+1))
+	# num_times = 1
+	# compute_times = np.zeros([(n_max-n_min)+1, num_times])
+	
+	# num_wrong = 0
+	# trials = 0
+	# numerical_prob = []
+	# nak_arr = []
+	
+	#test correctness
+	for n in range(1,5):
+		for a in range(1,4):
+			if(a>=n):
+				break
+			k , prob = g.calc_lim(a,n)
+			print(" ")
+			print(" ")
+			print("N:%d, A:%d, K:%d, prob_success: %.2f"%(n,a,k, prob))
+			# nak_arr.append("N:%d, A:%d, K:%d, prob_success: %.2f"%(n,a,k, prob))
+			# trials = 0
+			# num_wrong = 0
+			all = g.all_f(n,a)
+			# for trial in range(2):
+				# for func in all:
+					# trials+=1
+			func = random.choice(all)
+			print("---------------FUNCTION------------")
 			print(func)
-			z0 = create_z0(n)
-			zf = create_zf(func,n)
-			z_0 = DefGate("Z0", z0)
-			z_f = DefGate("ZF", zf)
-			result, compile_time, run_time = grover(z_0,z_f,n,a)
+			result, run_time = g.run_grover(func,n,a)
+			print("---------------RESULT------------")
 			print(result)
-			uf_compute_times[ind, iter_ind] = run_time
-	
-	#%% Save the data
+			if(not g.check_correctness(func,result,n)):
+				# num_wrong+=1
+				print("INCORRECT!!")
 
-	np.savez('grover_benchmarking.npz', n_list = n_list,compile_times = compile_times,compute_times = compute_times)
-	np.savez('grover_uf.npz', input_list = input_list,uf_compute_times=uf_compute_times)
+			# numerical_prob.append((1-(num_wrong/trials)))
+
+	# for idx,item in enumerate(nak_arr):
+		# print(item)
+		# print("Numerical probability of success:%d"%numerical_prob[idx])
+	
+	
+	
+
+	# # #compute average compile and compute time for all functions for a range of n values and a given 'a'
+	# a = 1
+	# n_min = 1
+	# n_max = 10
+	# n_list = list(range(n_min,n_max+1))
+	# num_times = 100
+	# compute_times = np.zeros([(n_max-n_min)+1])
+	# for ind, n in enumerate(n_list):
+		# avg_compute = 0
+		# for iter_ind in range(num_times):
+			# all = g.all_f(n,a)
+			# func = random.choice(all)
+			# # print("---------------FUNCTION------------")
+			# # print(func)
+			# # print("---------------FUNCTION------------")
+			# result, run_time = g.run_grover(func,n,a)
+			# avg_compute += run_time
+			# # print("---------------RESULT------------")
+			# # print(result)
+			# # print("---------------RESULT------------")
+		# compute_times[ind] = avg_compute/num_times
+		
+	# print("compute times")
+	# print(compute_times)
+		
+		
+		
+		#############@@@@@@@@@@@@@@@@@#############################@@@@@@@@@@@@@ alt style
+
+			# for func in all:
+				# #print(func)
+				# result, run_time = g.run_grover(func,n,a)
+				# avg_compute += run_time
+				# #print(result)
+			# compute_times[ind, iter_ind] = avg_compute/len(all)
+			
+			
+		#############@@@@@@@@@@@@@@@@@#############################@@@@@@@@@@@@@ alt style
+		
+	# #testing for uf computation time at a fixed n
+	# num_funcs = 16 #64 is (4 qubits choose 1) -> 2^4 choose 1 -> number of possible functions with a=2
+	# input_list = list(range(num_funcs))
+	# uf_compute_times = np.zeros([num_funcs,num_times])
+	# for iter_ind in range(num_times):
+		# a = 1
+		# n = 4
+		# all = g.all_f(n,a)
+		# for ind,func in enumerate(all):
+			# #print(func)
+			# result, run_time = g.run_grover(func,n,a)
+			# #print(result)
+			# uf_compute_times[ind, iter_ind] = run_time
+	
+	# #%% Save the data
+
+	# np.savez('grover_benchmarking2.npz', n_list = n_list,compute_times = compute_times)
+	# np.savez('grover_uf.npz', input_list = input_list,uf_compute_times=uf_compute_times)
 	   
-	#%% Load data
+	# #%% Load data
 
-	data = np.load('grover_benchmarking.npz')
-	n_list = data['n_list']
-	compilation_times = data['compile_times']
-	computation_times = data['compute_times']
-	uf_data = np.load('grover_uf.npz')
-	input_list = uf_data['input_list']
-	uf_compute_times = uf_data['uf_compute_times']
-
-	#%%
-	avg_time_compile = np.sum(compilation_times,1)/np.shape(compilation_times)[1]
-	avg_time_compute = np.sum(computation_times,1)/np.shape(computation_times)[1]
-
-	#%% Plot and save 
-
-	#plot compilation time vs n
-	plt.rcParams["font.family"] = "serif"
-	fig = plt.figure(figsize=(16,10))
-
-	z = np.polyfit(n_list, avg_time_compile, 10)
-	p = np.poly1d(z)
-
-	plt.plot(np.linspace(n_list[0], n_list[-1] + 0.1, 100), p(np.linspace(n_list[0], n_list[-1] + 0.1, 100)), ls = '-', color = 'r')
-	plt.plot(n_list, avg_time_compile, ls = '', markersize = 15, marker = '.',label = 'M') #, ls = '--'
-	plt.title('Compilation time scaling for Grovers algorithm, a = 1', fontsize=25)
-	plt.xlabel('n (bit string length)',fontsize=20)
-	plt.ylabel('Average time of compilation (ms)',fontsize=20)
-	plt.xticks(fontsize=15)
-	plt.yticks(fontsize=15)
-
-
-	fig.savefig('Figures/grover_compile_a1.png', bbox_inches='tight')
+	# data = np.load('grover_benchmarking2.npz')
+	# n_list = data['n_list']
+	# computation_times = data['compute_times']
+	# avg_time_compute = computation_times
 	
-	
+	# uf_data = np.load('grover_uf.npz')
+	# input_list = uf_data['input_list']
+	# uf_compute_times = uf_data['uf_compute_times']
+
+#############@@@@@@@@@@@@@@@@@#############################@@@@@@@@@@@@@ alt style
+	# #%%
+	# avg_time_compute = np.sum(computation_times,1)/np.shape(computation_times)[1]
+#############@@@@@@@@@@@@@@@@@#############################@@@@@@@@@@@@@ alt style
+	# #%% Plot and save 
+
 	#plot computation time vs n
 
-	fig = plt.figure(figsize=(16,10))
+	# fig = plt.figure(figsize=(16,10))
 
-	z = np.polyfit(n_list, avg_time_compute, 10)
-	p = np.poly1d(z)
+	# z = np.polyfit(n_list, avg_time_compute, 8)
+	# p = np.poly1d(z)
 
-	plt.plot(np.linspace(n_list[0], n_list[-1] + 0.1, 100), p(np.linspace(n_list[0], n_list[-1] + 0.1, 100)), ls = '-', color = 'r')
-	plt.plot(n_list, avg_time_compute, ls = '', markersize = 15, marker = '.',label = 'M') #, ls = '--'
-	plt.title('Compilation time scaling for Grovers algorithm, a = 1', fontsize=25)
-	plt.xlabel('n (bit string length)',fontsize=20)
-	plt.ylabel('Average time of computation (ms)',fontsize=20)
-	plt.xticks(fontsize=15)
-	plt.yticks(fontsize=15)
+	# plt.plot(np.linspace(n_list[0], n_list[-1] + 0.1, 100), p(np.linspace(n_list[0], n_list[-1] + 0.1, 100)), ls = '-', color = 'r')
+	# plt.plot(n_list, avg_time_compute, ls = '', markersize = 15, marker = '.',label = 'M') #, ls = '--'
+	# plt.title('Computation time scaling for Grovers algorithm, a = 1', fontsize=25)
+	# plt.xlabel('n (bit string length)',fontsize=20)
+	# plt.ylabel('Average time of computation (s)',fontsize=20)
+	# plt.xticks(fontsize=15)
+	# plt.yticks(fontsize=15)
 
 
-	fig.savefig('Figures/grover_compute_a1.png', bbox_inches='tight')
-
-	
-	#plot computation time vs uf for n= 4
-
-	fig = plt.figure(figsize=(16,10))
+	# fig.savefig('Figures/grover_computation_100trials.png', bbox_inches='tight')
 
 	
-	plt.plot(input_list, uf_compute_times, ls = '', markersize = 15, marker = '.',label = 'M') #, ls = '--'
-	plt.title('Uf time scaling for Grovers algorithm, n=4, a = 1', fontsize=25)
-	plt.xlabel('U_f (16 possible funcs)',fontsize=20)
-	plt.ylabel('Average time of computation (ms)',fontsize=20)
-	plt.xticks(fontsize=15)
-	plt.yticks(fontsize=15)
-	fig.savefig('Figures/grover_compute_uf.png', bbox_inches='tight')
+	# #plot computation time vs uf for n= 4
+
+	# fig = plt.figure(figsize=(16,10))
+
+	
+	# plt.hist(uf_compute_times)
+	# plt.title('Dependence of execution time on $U_f$ (Grover algorithm)', fontsize=25)
+	# plt.xlabel('Execution time (ms)',fontsize=20)
+	# plt.ylabel('Frequency of occurence',fontsize=20)
+	# plt.xticks(fontsize=15)
+	# plt.yticks(fontsize=15)
+
+
+	# fig.savefig('Figures/grover_hist.png', bbox_inches='tight')
