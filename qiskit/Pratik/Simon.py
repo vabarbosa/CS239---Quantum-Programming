@@ -425,10 +425,33 @@ class Program:
 
         
 
-#%% Suggested code for implementation 
-    
+
+
+#%% Suggested template for a lower level implementation:
+p = Program()         
+#### define f here
+#### Sample f:
+n = 3
+s = p.generate_random_s(n)
+f = p.s_function(s)
+######
+Uf = p.create_Uf(f)
+circ = p.get_Simon_circuit(Uf)
+counts = p.run_created_circuit(circ, num_shots = 20)
+list_y = [y for y in counts]
+list_s = p.s_solution(list_y)
+print("Correct s = %s, obtained values are"
+      %s,list_s)
+
+#%% Suggested template for a higher level implementation:
+p = Program()         
+#### define f here
+list_s = p.simon_solution(f, num_shots = 20)
+print("obtained values of s are",list_s)
+
+#%% Suggested template for testing and benchmarking:
 p = Program()
-n_list, time_reqd_arr, correctness_arr, avg_time = p.scaling_analysis(n_min = 1, n_max = 3, time_out_val = 10000, num_times = 1, save_data = True)
+n_list, time_reqd_arr, correctness_arr, avg_time = p.scaling_analysis(n_min = 1, n_max = 4, time_out_val = 10000, num_times = 20, save_data = True)
 n_list, num_times, correctness_arr, time_reqd_arr, avg_time = p.load_scaling_analysis()
 p.plot_and_save_scaling(n_list, avg_time, save_data = False)
 p.check_correctness()
