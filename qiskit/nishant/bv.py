@@ -10,9 +10,11 @@ from qiskit.quantum_info.operators import Operator
 from itertools import combinations
 import time, random
 import matplotlib.pyplot as plt
+from collections.abc import Iterable
+import math
 
 class Program:
-    def run_bv(self, n, f, num_shots=1000):
+    def run_bv(self, f, num_shots=1000):
         """
         High level function to run Berenstein Vazarani. This use f to generate Uf, then builds a circuit, runs it, and measures and returns if the function is balanced.
         f is assumed to be balanced or constant. If it measures 0^n, f is constant
@@ -23,7 +25,7 @@ class Program:
         Returns:
         time_elapsed, answer: time taken to compile and measure. 0 if f is balanced or 1 o.w.
         """
-        
+        n = int(math.log(len(f), 2))        
         start = time.time()
         # create a gate from f
         uf = self.create_uf(n, f)
@@ -48,6 +50,10 @@ class Program:
         Returns:
         qiskit circuit implementing BV
         """
+        if not isinstance(uf, Operator):
+            raise ValueError("uf must be an operator!")
+        if not isinstance(n, int):
+            raise ValueError("n must be an int")
         
         num_qubits = n + 1
 
@@ -81,6 +87,12 @@ class Program:
         Returns:
         counts: map of measurement to count
         """
+        if not isinstance(circuit, QuantumCircuit):
+            raise ValueError("circuit must be a QuantumCircuit")
+        if not isinstance(backend, str):
+            raise ValueError("backend must be of type string")
+        if not isinstance(num_shots, int):
+            raise ValueError("num_shots must be of type int")
         
         simulator = Aer.get_backend(backend)
         job = execute(circuit, simulator, shots=num_shots)
@@ -93,9 +105,13 @@ class Program:
         Args: 
         counts: map of measurement to count
         n: number of bits - arity of f        
-        Returns:
+        Retuns:
         result: CONSTANT (0) if 0^n was measured at all, o.w. BALANCED (1)
         """
+        if not isinstance(counts, dict):
+            raise ValueError("counts must be of type dict")
+        if not isinstance(n, int):
+            raise ValueError("n must be of type dict")
         
         if len(counts) != 1:
             # 0^n and other results should never happen
@@ -112,6 +128,8 @@ class Program:
         gate: gate representing uf
         """
         
+        if not isinstance(n, int):
+            raise ValueError("n must be an int")
         matrix = self.build_matrix(n, f)
         uf = Operator(matrix)
         return uf
@@ -125,6 +143,8 @@ class Program:
         Returns:
         matrix: matrix representing the uf gate
         """
+        if not isinstance(f, Iterable):
+            raise ValueError("f must be a 1d array of 1s and 0s")
         
         num_qubits = n + 1
         matrix = [[ 0 for _ in range(2**num_qubits) ] for _ in range(2**num_qubits) ]
@@ -133,6 +153,8 @@ class Program:
             x = xb[:-1]
             b = xb[-1]
             fx = f[self.to_int(x)]
+            if fx != 0 and fx != 1:
+                raise ValueError("f must be a 1d array of 0s and 1s")
             xbfx = x + [b ^ fx]
             # measure from end to account for little endian
             matrix[self.to_int(xb[::-1])][self.to_int(xbfx[::-1])] = 1
@@ -207,7 +229,7 @@ class Program:
             print("Running exhaustive tests for %d bits" % n)
             functions = self.generate_functions(n, True, 100)
             for expected, f in functions:
-                run_time, calculated = self.run_bv(n, f)
+                run_time, calculated = self.run_bv(f)
                 if calculated != expected:
                     raise ValueError("Test failed: (%s). Got: %s. Expected %s." % (f, calculated, expected))
                 print("Test passed. Got: %s. Expected %s. Tooks %d ms." % (calculated, expected, run_time))
@@ -230,7 +252,7 @@ class Program:
             functions = self.generate_functions(n, True, num_trials)
             for trial in range(num_trials):
                 expected, f = functions[trial]
-                run_time, calculated = self.run_bv(n, f, 1)
+                run_time, calculated = self.run_bv(f, 1)
                 if calculated != expected:
                     raise ValueError("Test failed: (%s). Got: %s. Expected %s." % (f, calculated, expected))
                 print("Test passed. Got: %s. Expected %s. Tooks %d ms." % (calculated, expected, run_time))
@@ -244,7 +266,7 @@ class Program:
         functions = self.generate_functions(n, True, num_times)
         for trial in range(num_times):
             expected, f = functions[trial]
-            run_time, calculated = self.run_bv(n, f, 1)
+            run_time, calculated = self.run_bv(f, 1)
             if calculated != expected:
                 raise ValueError("Test failed: (%s). Got: %s. Expected %s." % (f, calculated, expected))
             print("Test passed. Got: %s. Expected %s. Tooks %d ms." % (calculated, expected, run_time))
@@ -301,6 +323,6 @@ class Program:
         
             
 p = Program()
-#p.run_tests(10)
-p.collect_data(10, 5, "bv.npz")
-p.plot_data("bv.npz")
+p.run_tests(5)
+#p.collect_data(10, 5, "bv.npz")
+#p.plot_data("bv.npz")
