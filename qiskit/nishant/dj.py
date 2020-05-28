@@ -323,8 +323,9 @@ class Program:
 
         fig.savefig('figures/dj_hist.png', bbox_inches='tight')
         
-            
-p = Program()
-p.run_tests(10)
-#p.collect_data(10, 5, "dj.npz")
-#p.plot_data("dj.npz")
+        
+if __name__ == "__main__":
+    p = Program()
+    p.run_tests(8)
+    #p.collect_data(10, 5, "dj.npz")
+    #p.plot_data("dj.npz")

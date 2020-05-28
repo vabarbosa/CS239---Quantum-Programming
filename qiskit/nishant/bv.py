@@ -35,7 +35,7 @@ class Program:
         results = self.measure(circuit, num_shots=num_shots)
         end = time.time()
         time_elapsed = int((end - start) * 1000)
-        # return constant if 0^n was measured
+        # grab the measurement
         a = self.evaluate(results, n)
         b = f[0]
         return time_elapsed, (a, b)
@@ -321,8 +321,8 @@ class Program:
 
         fig.savefig('figures/bv_hist.png', bbox_inches='tight')
         
-            
-p = Program()
-p.run_tests(5)
-#p.collect_data(10, 5, "bv.npz")
-#p.plot_data("bv.npz")
+if __name__ == "__main__":            
+    p = Program()
+    p.run_tests(8)
+    #p.collect_data(10, 5, "bv.npz")
+    #p.plot_data("bv.npz")
