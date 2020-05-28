@@ -3,15 +3,26 @@ First, import the module dj.py
 
 The function f: {0,1}^n --> {0,1} which is either constant or balanced, is taken as input in the form of a numpy array of length 2**n. Each element of f is an integer 0 or 1. The output of f corresponding to a bit string s is stored at f[d(s)], where d(s) corresponds to the decimal representation of string s. For example, for n=3, the value of f(011) will be stored at f[3], since the binary string 011 corresponds to the number 3.
 
+All the code is organized in a class. First declare the class then to run:
 There are two ways to implement the DJ algorithm:
-1. (Recommended) For a high level implementation, call the function run_DJ(f). This function takes f as input, obtains the oracle Uf, creates and runs the circuit, and interprets the results. It returns 1 if it determines that f is constant, and 0 otherwise.
+1. (Recommended) For a high level implementation, call the function run_dj(f). This function takes f as input, obtains the oracle Uf, creates and runs the circuit, and interprets the results. It returns 1 if it determines that f is constant, and 0 otherwise.
+
+>>> p = Program()
+>>> run_time, calculated = p.run_dj(f)
+>>> print(calculated)
+# 0 if f is balanced
+# 1 if f is constant
+
 2. For a lower level implementation, follow this sequence:
-	>> Uf = create_Uf(f)
-		Creates the unitary matrix Uf corresponding to function f.
-	>> f_quil_def = DefGate("Uf", Uf)
-		Create a gate object using Uf.
-	>> DJ(Uf_quil_def, n) 
-		Pass the oracle gate, and the value of n in order to execute the DJ circuit. The function will return 1 if it determines that f is constant, and 0 otherwise. It will also print out its conclusion in words.
+>>> p = Program()
+# create a gate from f
+>>> uf = p.create_uf(n, f)
+# build the dj circuit
+>>> circuit = p.build_circuit(n, uf)
+# measure the circuit h
+>>> results = p.measure(circuit, num_shots=num_shots)
+# constant if it measures 0^n
+>>> print(p.evaluate(results, n))
 		
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # BV
@@ -19,15 +30,24 @@ First, import the module BV.py
 
 The function f: {0,1}^n --> {0,1} which is satisfies f(x) = a . x + b, is taken as input in the form of a numpy array of length 2**n. Each element of f is an integer 0 or 1. The output of f corresponding to a bit string s is stored at f[d(s)], where d(s) corresponds to the decimal representation of string s. For example, for n=3, the value of f(011) will be stored at f[3], since the binary string 011 corresponds to the number 3.
 
-There are two ways to implement the DJ algorithm:
-1. (Recommended) For a high level implementation, call the function run_BV(f). This function takes f as input, obtains the oracle Uf, creates and runs the circuit, and interprets the results. It returns the value of a as a string.
+There are two ways to implement the bv algorithm:
+1. (Recommended) For a high level implementation, call the function run_BV(f). This function takes f as input, obtains the oracle Uf, creates and runs the circuit, and interprets the results. It returns the value of a as a string. Note the will call f(0) to determine b.
+
+>>> p = Program()
+>>> run_time, calculated = p.run_dj(f)
+>>> print(calculated)
+# prints (a,b) where f(x) = a . x + b
+
 2. For a lower level implementation, follow this sequence:
-	>> Uf = create_Uf(f)
-		Creates the unitary matrix Uf corresponding to function f.
-	>> f_quil_def = DefGate("Uf", Uf)
-		Create a gate object using Uf.
-	>> BV(Uf_quil_def, n) 
-		Pass the oracle gate, and the value of n in order to execute the BV circuit. The function will return the value of a, determined using the BV algorithm.
+# create a gate from f
+>>> uf = self.create_uf(n, f)
+# build the bv circuit
+>>> circuit = self.build_circuit(n, uf)
+# measure the circuit
+results = self.measure(circuit, num_shots=num_shots)
+>>> a = self.evaluate(results, n)
+>>> b = f[0]
+>>> print(a, b)
 
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # Simon's algorithm
