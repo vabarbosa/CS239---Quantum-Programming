@@ -36,51 +36,18 @@ First, import the module Simon.py
 
 The function f: {0,1}^n --> {0,1}^n which is satisfies f(x) = f(y) iff x + y \in {0,s} , is taken as input in the form of a numpy array of length 2**n. Each element of f is a string of length n. The output of f corresponding to a bit string s is stored at f[d(s)], where d(s) corresponds to the decimal representation of string s. For example, for n=3, the value of f(011) will be stored at f[3], since the binary string 011 corresponds to the number 3.
 
+Create a Program class instance p, using p = Program()
 There are two ways to implement the DJ algorithm:
-1. (Recommended) For a high level implementation, call the function run_BV(f). This function takes f as input, obtains the oracle Uf, creates and runs the circuit, and interprets the results. It returns the value of a as a string.
+1. (Recommended) For a high level implementation, call the function simon_solution(f). This function takes f as input, obtains the oracle Uf, creates and runs the circuit, and interprets the results. It returns the values of s in the form of a list of bitstrings. The first element of this string will always be '0..0', with the remaining ones being the non-zero values predicted by Simon's algorithm.
 2. For a lower level implementation, follow this sequence:
-	>> Uf = create_Uf(f)
-		Creates the unitary matrix Uf corresponding to function f.
-	>> f_quil_def = DefGate("Uf", Uf)
-		Create a gate object using Uf.
-	>> BV(Uf_quil_def, n) 
-		Pass the oracle gate, and the value of n in order to execute the BV circuit. The function will return the value of a, determined using the BV algorithm.
-
-High Level
-
-Note f is assumed to be a 2d list or ndarray of 0s and 1s representing the function f
-It's dimensions are 2^n x n.
-The ith row is the integer representation of the binary string x.
-f[i][j] is the jth bit of f(x).
-f[x] is a list of bits representing f(x).
-
-Import the file.
-
-High Level:
->>> run_simon(f)
-
-Output:
-The program outputs progress messages as it goes. It prints each y it measures. It interprets the measurements and calulates s.
-In order to allow s as a possible secret, f(0) must be compared against f(s). If they're equal s_calc is correct, otherwise f is 1 to 1 and s = 0.
-run_simon(f) will call f twice to confirm the correct value of s.
-
-If f should not be called, run:
->>> run_simon(f, False)
-
-This should be used if it is known that s != 0.
-
-The returned value will be a list of bits representing s.
-
-Lower Level:
-
->>> uf = create_Uf(f)
->>> Uf_quil_def = DefGate("UF", uf)
->>> compile_time, qc, executable = compile_simon(Uf_quil_def, n, time_out_val)
->>> run_time, vectors_generated, s_calc = simon(n, qc, executable)
->>> print(s_calc)
-
-This assumes no access to f. s_calc must be checked or it must be known before hand that s!= 0.
-
+	>> p = Program()         
+	#### define f here
+	>>Uf = p.create_Uf(f)
+	>>circ = p.get_Simon_circuit(Uf)
+	>>counts = p.run_created_circuit(circ, num_shots = 20)
+	>>list_y = [y for y in counts]
+	>>list_s = p.s_solution(list_y)
+	
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # Grover
 
