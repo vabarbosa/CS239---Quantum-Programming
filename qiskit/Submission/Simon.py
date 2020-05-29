@@ -259,7 +259,7 @@ class Program:
         else:
             return False
         
-    def scaling_analysis( self, n_min = 1, n_max = 4, time_out_val = 10000, num_times = 20, save_data = True): 
+    def scaling_analysis( self, n_min = 1, n_max = 4, time_out_val = 10000, num_times = 20, save_data = True, num_shots = 20): 
         """ Obtains the time scaling as n is increased
         Kwargs:
             n_min = (integer) lowest value of n to be considered
@@ -284,7 +284,7 @@ class Program:
                 f = self.s_function(s)
                 
                 start = time.time()
-                list_s = self.simon_solution(f, num_shots = 20)
+                list_s = self.simon_solution(f, num_shots = num_shots)
                 end = time.time()
                 time_reqd_arr[ind, iter_ind] = end-start
                 correctness_arr[ind, iter_ind] *= self.verify_Simon_output(f, list_s)
@@ -333,12 +333,13 @@ class Program:
         if save_data:
             fig.savefig('Figures/Simon_scaling.png', bbox_inches='tight')
         
-    def check_correctness(self, n= 3, num_times = 100):
+    def check_correctness(self, n= 2, num_times = 100, num_shots = 20):
         """
         Run Simon's algorithm for a given n, num_times number of times. For each run, f is chosen randomly.
-        Args:
+        KwArgs:
             n: Integer
             num_times: Integer
+            num_shots: integer
         Returns: 
             correctness_arr: Array of bools
         """
@@ -347,7 +348,7 @@ class Program:
         for iter_ind in range(num_times):
             s = self.generate_random_s(n)
             f = self.s_function(s)
-            list_s = self.simon_solution(f, num_shots = 20)
+            list_s = self.simon_solution(f, num_shots = num_shots)
             correctness_arr[iter_ind] *= self.verify_Simon_output(f, list_s)
             print("Iteration = %i: Algorithm %s. Correct s = %s, obtained values are"
                       %(iter_ind, ci_list[correctness_arr[iter_ind]], s),list_s)
@@ -355,7 +356,7 @@ class Program:
         return correctness_arr
     
     
-    def Uf_dependence_analysis(self, n = 3, num_times= 100, time_out_val = 10000, save_data = True):
+    def Uf_dependence_analysis(self, n = 3, num_times= 100, time_out_val = 10000, save_data = True, num_shots = 20):
         """
         Runs Simon's algorithms for num_times number of times for randomly chosen f's correspoding to given value of n
         kwargs:
@@ -363,6 +364,7 @@ class Program:
             num_times: Integer (number of random f's to be tested)
             time_out_val: integer
             save_data: bool
+            num_shots: integer
         returns:
             correctness_arr: array of bools
             time_required_arr: array of floats
@@ -376,7 +378,7 @@ class Program:
             f = self.s_function(s)
             
             start = time.time()
-            list_s = self.simon_solution(f, num_shots = 20)
+            list_s = self.simon_solution(f, num_shots = num_shots)
             end = time.time()
             time_reqd_arr[iter_ind] = end-start
             correctness_arr[iter_ind] *= self.verify_Simon_output(f, list_s)
@@ -437,7 +439,7 @@ f = p.s_function(s)
 ######
 Uf = p.create_Uf(f)
 circ = p.get_Simon_circuit(Uf)
-counts = p.run_created_circuit(circ, num_shots = 20)
+counts = p.run_created_circuit(circ, num_shots = 40)
 list_y = [y for y in counts]
 list_s = p.s_solution(list_y)
 print("Correct s = %s, obtained values are"
@@ -455,7 +457,7 @@ n_list, time_reqd_arr, correctness_arr, avg_time = p.scaling_analysis(n_min = 1,
 n_list, num_times, correctness_arr, time_reqd_arr, avg_time = p.load_scaling_analysis()
 p.plot_and_save_scaling(n_list, avg_time, save_data = False)
 p.check_correctness()
-correctness_arr, time_reqd_arr = p.Uf_dependence_analysis(save_data = True)
+correctness_arr, time_reqd_arr = p.Uf_dependence_analysis(save_data = False)
 num_times, correctness_arr, n, time_reqd_arr = p.load_Uf_analysis() 
 p.plot_and_save_UF_analysis(time_reqd_arr, save_data = False)
     
