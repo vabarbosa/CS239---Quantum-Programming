@@ -1,0 +1,52 @@
+n=1, backend = ibmq_burlington, job ID = 5edfdb7659a50a00120772b4
+ n=1, backend = ibmq_qasm_simulator, job ID = 5edfdb9bace2640013be8a0b 
+ 
+n=1, backend = ibmq_burlington, job ID = 5edfdb7659a50a00120772b4
+ n=1, backend = ibmq_qasm_simulator, job ID = 5edfdb9bace2640013be8a0b 
+ 
+n=1, backend = ibmqx2, job ID = 5edfdf84748037001236db67
+ n=1, backend = ibmq_qasm_simulator, job ID = 5edfe02d65afea001180b719 
+ 
+n=1, backend = ibmqx2, job ID = 5edff0ef748037001236dc71
+ n=1, backend = ibmq_qasm_simulator, job ID = 5edff1149e41d40012153b29 
+ 
+
+ 
+n=1, backend = ibmq_burlington, job ID = 5edff86c59a50a0012077465
+ n=1, backend = ibmq_qasm_simulator, job ID = 5edff8c86c24ac001371acdd 
+ 
+Calibration: n=1, backend = ibmq_burlington, job ID = 5edff8fc9e41d40012153b8a 
+ 
+n=1, backend = ibmq_burlington, job ID = 5edffb356c24ac001371acfa
+ n=1, backend = ibmq_qasm_simulator, job ID = 5edffb8a41d47c0013092185 
+ 
+n=2, backend = ibmq_burlington, job ID = 5ee002274f80e400126194f0
+ n=2, backend = ibmq_qasm_simulator, job ID = 5ee00289ace2640013be8c4f 
+ 
+Multiple circuits run for n=1, backend = ibmq_burlington, job ID = 5ee02734bb3a8700133de8ee
+ Multiple circuits run for n=1, backend = ibmq_qasm_simulator, job ID = 5ee029066c24ac001371ae32
+ Erro mitigation circuits run for n=1, backend = ibmq_burlington, job ID = 5ee02896e0148800132bdecf 
+
+These are good: ~~~~~~~~~~~~
+Multiple circuits run for n=1, backend = ibmq_burlington, job ID = 5ee02d0ae0148800132bdf06
+ Multiple circuits run for n=1, backend = ibmq_qasm_simulator, job ID = 5ee02d1df7f05f001382490c
+ Error mitigation circuits run for n=1, backend = ibmq_burlington, job ID = 5ee02d276c24ac001371ae61 
+ ~~~~~~~~~~~~
+
+
+Multiple circuits run for n=2, backend = ibmq_burlington, job ID = 5ee03dc8e245e900145fea0c
+ Multiple circuits run for n=2, backend = ibmq_qasm_simulator, job ID = 5ee03decace2640013be8e0c
+ Error mitigation circuits run for n=2, backend = ibmq_burlington, job ID = 5ee03df41299b500131a6c20 
+ 
+Multiple circuits run for n=2, backend = ibmq_burlington, job ID = 5ee04fd0e245e900145fead9
+ Multiple circuits run for n=2, backend = ibmq_qasm_simulator, job ID = 5ee04fea7b67e700126e3160
+ Error mitigation circuits run for n=2, backend = ibmq_burlington, job ID = 5ee04ff31299b500131a6ce6 
+ 
+Multiple circuits run for n=2, backend = ibmq_burlington, job ID = 5ee0508ef7f05f0013824a8d
+ Multiple circuits run for n=2, backend = ibmq_qasm_simulator, job ID = 5ee050a92146fc001307bf75
+ Error mitigation circuits run for n=2, backend = ibmq_burlington, job ID = 5ee050b3e0148800132be088 
+ 
+Multiple circuits run for n=1, backend = ibmq_burlington, job ID = 5ee0511de245e900145feae8
+ Multiple circuits run for n=1, backend = ibmq_qasm_simulator, job ID = 5ee0513516fa740012decf9f
+ Error mitigation circuits run for n=1, backend = ibmq_burlington, job ID = 5ee051472146fc001307bf82 
+ 
