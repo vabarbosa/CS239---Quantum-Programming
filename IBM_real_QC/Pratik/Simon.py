@@ -13,25 +13,11 @@ import qiskit
 from qiskit.visualization import plot_histogram
 from qiskit.ignis.mitigation.measurement import (complete_meas_cal, tensored_meas_cal,
                                                  CompleteMeasFitter, TensoredMeasFitter)
+from qiskit.providers.ibmq.managed import IBMQJobManager
 #qiskit.__version__
 #qiskit.__qiskit_version__
 
 
-
-#provider = IBMQ.get_provider(group='open')
-#provider.backends()
-#
-## Choose a backend
-#backend = provider.get_backend('ibmq_essex')
-#backend.configuration().basis_gates
-
-
-# runing a job on a backednd
-#job_exp = execute(qc, backend=backend)
-#job_monitor(job_exp)
-#result_exp = job_exp.result()
-#counts_exp = result_exp.get_counts(qc)
-#plot_histogram([counts_exp,counts], legend=['Device', 'Simulator'])
 
 # retrieving a previously run job
 
@@ -47,7 +33,7 @@ from qiskit import(QuantumCircuit, execute, Aer)
 import random as rd
 import time
 import matplotlib.pyplot as plt
-
+from datetime import datetime
 
 
 #%% Define functions
@@ -222,7 +208,7 @@ def s_function(s, seed_val = 0):
         f = [give_binary_string(z.item(),n) for z in f_temp]
         return f
 
-def create_Uf(f):
+def create_Uf_matrix(f):
         """
         Given a function f:{0,1}^n ---> {0,1}^n, creates and returns the corresponding oracle (unitary matrix) Uf
         Args:
@@ -252,7 +238,7 @@ def create_Uf(f):
                 Uf[int(out[::-1],2),int(inp[::-1],2)] = 1
         return Uf
 
-def get_Simon_circuit(Uf):
+def get_Simon_circuit_from_matrix(Uf):
         """
         Simon's algorithm: Determines the value of s, for a function f = a . x + b
         Args:
@@ -324,7 +310,7 @@ def give_y_vals(counts):
         counts: Dictionary
     Returns:
         new_counts: dictionary with strings reversed
-        cropped_counts: dictionary with y values and counts
+        dict_y: dictionary with y values and counts
     """
     n = int(len(list(counts)[0])/2)
     
@@ -339,10 +325,14 @@ def give_y_vals(counts):
         cropped_i = i[::-1][0:n]
         cropped_counts[cropped_i] += counts[i]
     
+    dict_y = {}
+    for key, value in cropped_counts.items():
+        if value != 0:
+            dict_y[key] = value
         
-    return new_counts, cropped_counts
+    return new_counts, dict_y
 
-def random_Uf_multiple_circuits(n, num_circs):
+def random_Uf_multiple_circuits_matrix_method(n, num_circs):
     """
     For a given value of n, create num_circs number of circuits with randomly created Ufs
     """
@@ -354,15 +344,15 @@ def random_Uf_multiple_circuits(n, num_circs):
         f = s_function(s, seed_val = 0)
         s_list.append(s)
         f_list.append(f)
-        Uf = create_Uf(f)
-        circ_list.append(get_Simon_circuit(Uf))
+        Uf = create_Uf_matrix(f)
+        circ_list.append(get_Simon_circuit_from_matrix(Uf))
     return s_list, f_list, circ_list
 
 
 def get_meas_filter(num_qubits, backend, num_shots = 1024):
     meas_calibs, state_labels = complete_meas_cal(qr = num_qubits, 
                                               circlabel='measureErrorMitigation')
-    job_calib = qiskit.execute(meas_calibs, backend = device_backend, shots=1024, optimization_level = 0)
+    job_calib = qiskit.execute(meas_calibs, backend = backend, shots=1024, optimization_level = 0)
     job_monitor(job_calib)
     calib_job_id = job_calib.job_id()
     print(calib_job_id)
@@ -372,10 +362,6 @@ def get_meas_filter(num_qubits, backend, num_shots = 1024):
 #    meas_fitter.plot_calibration()
     #print(meas_fitter.cal_matrix)
     meas_filter = meas_fitter.filter
-    # Results with mitigation
-    mitigated_results = meas_filter.apply(result_qc)
-    mitigated_counts = mitigated_results.get_counts(0)
-
     return meas_filter, calib_job_id
 
 def s_solution_unmodified(list_y):
@@ -396,133 +382,561 @@ def s_solution_unmodified(list_y):
                 
         return list_s
 
-#def qc_vs_sim_comparison_execute(n = 2, num_circs = 10, num_shots = 20, device_preference = 'ibmq_burlington'):
-#    """
-#    Args:
-#        n: Int- value of n for f
-#        num_circs: Int - Number of random Ufs to be created
-#        num_shots: Int - Number of runs per Uf
-#        device_preference: If integer 0, obtain the least busy backend
-#                            If string, obtain corresponding backend
-#    """
+def qc_vs_sim_comparison_execute_matrix_method(n = 2, num_circs = 10, num_shots = 20, 
+                                               device_preference = 'ibmq_burlington',
+                                               save_fig_setting = 0):
+    """ For a given n, obtain num_circs number of random Ufs (by creating Uf matrices), and obtain 
+    num_shots number of y values, from the simulator, from the hardware backend, as well as error mitigated counts
+    Write the three job ids in a notepad file.
+    Create and save figures of histograms of y
+    Because of significant errors in the quantum hardware, s is not calculated at all.
+    Applicability of this function is limited to n<=2, since the circuit depth is very high, making it impossible to run
+    for larger n
+    Args:
+        n: Int- value of n for f
+        num_circs: Int - Number of random Ufs to be created
+        num_shots: Int - Number of runs per Uf
+        device_preference: If integer 0, obtain the least busy backend
+                            If string, obtain corresponding backend
+        save_fig_setting: Int- If 0, do not save figures
+                                If 1, save figures
+    Returns:
+        list_y_dicts_sim: List of length num_circs, with each element containing y dictionary for simulation results
+        list_y_dicts_qc: List of length num_circs, with each element containing y dictionary for qc results
+        list_y_dicts_mit: List of length num_circs, with each element containing y dictionary for error mitigated results
+        s_list: list of s strings
+        f_list: list of functions f (list of lists)
+        qc_id, sim_id, calib_job_id: Job ids for future reference
+    """
+    n = 1
+    num_circs = 10
+    
+    n_qubits = 2 * n
+    s_list, f_list, circ_list = random_Uf_multiple_circuits_matrix_method(n, num_circs)
+    
+    # load accounts and get backends
+    load_account()
+    device_backend, simulator_backend = get_backends(device_preference = 'ibmq_burlington', n_qubits = n_qubits)
+    print("Chosen device backedn is " + device_backend.name())
+    
+    # run on device hardware
+    job_qc = execute(circ_list, backend = device_backend, shots = num_shots, optimization_level = 3)
+    job_monitor(job_qc)
+    qc_id = job_qc.job_id()
+    print('Job id for device job' + qc_id )
+    result_qc = job_qc.result()
+    
+    # run on IBM simulator
+    job_sim = execute(circ_list, backend = simulator_backend, shots = num_shots, optimization_level = 3)
+    job_monitor(job_sim)
+    sim_id = job_sim.job_id()
+    print('Job id for simulation job' + sim_id)
+    result_sim = job_sim.result()
+    
+    # error mitigation
+    meas_filter, calib_job_id = get_meas_filter(num_qubits = n_qubits, backend = device_backend, num_shots = 1024)
+    print('Job id for mitigation circuits' + calib_job_id)
+    mitigated_results = meas_filter.apply(result_qc)
+    mitigated_counts = [mitigated_results.get_counts(i) for i in range(num_circs)]
+    
+    
+    # print details to notepad file
+    file2write=open("job_tracking.txt",'a')
+    file2write.write("Current time is " + str(datetime.now()) + " \n")
+    file2write.write("Multiple circuits run for n=%i, backend = %s, job ID = %s" 
+                     %(n,device_backend, qc_id))
+    file2write.write("\n Multiple circuits run for n=%i, backend = %s, job ID = %s" 
+                     %(n,simulator_backend, sim_id))
+    file2write.write("\n Error mitigation circuits run for n=%i, backend = %s, job ID = %s \n \n"
+                     %(n,device_backend, calib_job_id))
+    file2write.close()
+    
+    # Obtain y_lists in the form of dictionaries for the simulation job, the qc backend job, and mitigated counts
+    raw_counts_qc = result_qc.get_counts()
+    raw_counts_sim = result_sim.get_counts()
+    raw_counts_mitigated = mitigated_counts
+    list_y_dicts_sim = []
+    list_y_dicts_qc = []
+    list_y_dicts_mit = []
+    
+    for i in range(num_circs):
+        _, cur_y_list_sim = give_y_vals(raw_counts_sim[i])
+        _, cur_y_list_qc = give_y_vals(raw_counts_qc[i])
+        _, cur_y_list_mit = give_y_vals(raw_counts_mitigated[i])
+        list_y_dicts_sim.append(cur_y_list_sim)
+        list_y_dicts_qc.append(cur_y_list_qc)
+        list_y_dicts_mit.append(cur_y_list_mit)
+    
+    if save_fig_setting:
+        # Plot and save all values
+        legend = [device_backend.name(), simulator_backend.name(), 'After mitigation'] 
+        figures_folder = 'Figures'
+        if not os.path.isdir(figures_folder):
+            os.mkdir(figures_folder)    
+        
+        
+        for expt_num in range(num_circs):
+            fig = plt.figure(figsize=(16,10))
+            ax = fig.gca()
+            plot_histogram([list_y_dicts_qc[expt_num],list_y_dicts_sim[expt_num],list_y_dicts_mit[expt_num]],
+                           legend=legend, ax = ax)
+        #    plt.tight_layout()
+            plt.title('Comparison of outputs: n=%i, circuit_number = %i. Exact s = %s' %(n,expt_num,s_list[expt_num]),
+                      fontsize=20)
+            
+            fig.savefig(figures_folder + '/n=%i_circ_num=%i_backend=%s.png' 
+                        %(n, expt_num, device_backend.name()), bbox_inches='tight')
+            plt.close(fig)
+        
+    return list_y_dicts_sim, list_y_dicts_qc, list_y_dicts_mit, s_list, f_list, qc_id, sim_id, calib_job_id
+    
+def create_compact_circuit(s, device_backend):
+    """ Given a string s of length n, obtain a random function, and the corresponding Simon's circuit
+    Importantly, Uf is constructed directly as a combination of X,NOT, XNOT and SWAP gates, and then transpiled
+    separately. Thus, we do not compute the UF matrix, which reduces the circuit depth significantly,
+    imporving the results of executing the correponding quanutum circuit drastically.
+    Args: 
+        s: string of length n. Only contains 0's and 1's
+        device_backend: Device backend
+    Returns:
+        circ: A random circuit corresponding to provided s
+        transpiled_circ: Transpiled circuit, corresponding to the given device_backend
+    
+    """
+    ## Define the circuit
+    circ = QuantumCircuit(2 * n, 2 * n) 
+    barriers = True
+    ###################### Operate H gates on the first n qubits
+    for i in range(n):
+        circ.h(i)
+    if barriers:
+        circ.barrier()
+    ##################### Create Uf 
+    #First, transform |x>|0> to |x>|x>
+    for i in range(n):
+        circ.cx(i, n + i)
+    # Obtain the first index of s which is non-zero
+    j = s.find('1')
+    if j != -1:
+        # xj now controls whether s is to be XORed with the second register, or not
+        # if xj = 0, do XOR
+        # else, do nothing
+        circ. x(j)
+        for i in range(n):
+            if s[i] == '1':
+                circ.cx(j,n+i)
+        circ. x(j)
+    
+    # Now, randomly swap qubits in the second register
+    # Swap a random number of times
+    num_swaps = np.random.randint(0,min(3,n))
+    dummy = 0
+    while dummy < num_swaps:
+        pair = np.random.choice(list(range(n,2*n)), size = 2, replace = False)
+        circ.swap(*pair)
+        dummy += 1
+    # randomly invert qubits
+    num_flips = np.random.randint(0,min(3,n))
+    flip_indices = np.random.choice(list(range(n,2*n)), size = num_flips, replace = False)
+    for ind in flip_indices:
+        circ.x(ind)
+    
+    
+    if barriers:
+        circ.barrier()
+        
+    ##################### Operate H gates on the first n qubits 
+    for i in range(n):
+        circ.h(i)
+    if barriers:
+        circ.barrier()
+
+#    circ.measure(list(range(0,n))[::-1], list(range(n)))      
+    circ.measure(list(range(0, 2 * n)), list(range(2 * n)))    
+    transpiled_circ = get_transpiled_circ(circ, backend = device_backend)
+    
+    
+    return circ, transpiled_circ
+#%%  Using the Uf matrix method 
 n = 1
 num_circs = 10
+num_shots = 20
+device_preference = 'ibmq_burlington'
+save_fig_setting = 0
+list_y_dicts_sim, list_y_dicts_qc, list_y_dicts_mit, s_list, f_list, qc_id, sim_id, calib_job_id = qc_vs_sim_comparison_execute_matrix_method(n = n,
+                                                                                                                                              num_circs = num_circs, num_shots = num_shots,
+                                                                                                                                              device_preference = device_preference,
+                                                                                                                                              save_fig_setting = save_fig_setting)
 
-n_qubits = 2 * n
-s_list, f_list, circ_list = random_Uf_multiple_circuits(n, num_circs)
 
-# load accounts and get backends
+
+
+
+#%% Method of creating Uf gate directly, without creating the Uf matrix
+
 load_account()
-device_backend, simulator_backend = get_backends(device_preference = 'ibmq_burlington', n_qubits = n_qubits)
-print("Chosen device backedn is " + device_backend.name())
+device_preference = 'ibmq_16_melbourne'#'ibmq_burlington'
+device_backend, simulator_backend = get_backends(device_preference = device_preference, n_qubits = 2 * n)
 
-# run on device hardware
-job_qc = execute(circ_list, backend = device_backend, shots = num_shots, optimization_level = 3)
-job_monitor(job_qc)
-print('Job id for device job' + job_qc.job_id())
-result_qc = job_qc.result()
 
-# run on IBM simulator
+#%%  Create and save circuits, made by explicit construction of Uf, without making the Uf matrix
+n = 7
+s = generate_random_s(n)
+circ, transpiled_circ = create_compact_circuit(s, device_backend)
+
+
+figures_folder = 'Figures/Circuits/n=%i'%n
+if not os.path.isdir(figures_folder):
+    os.mkdir(figures_folder) 
+cur_time = str(datetime.now())
+cur_time = cur_time.replace(":","-")
+
+fig = plt.figure(figsize=(16,10))
+ax = fig.gca()
+circ.draw(output  = 'mpl', ax = ax, vertical_compression  = 'high', idle_wires = False)
+plt.title('Randomly created Simon\'s circuit for s = %s. Depth = %i' %(s,circ.depth()),fontsize=20)
+fig.savefig(figures_folder + '/backend=%s_time=%s_untranspiled.png' 
+            %(device_backend.name(), cur_time), bbox_inches='tight')
+plt.close(fig)
+
+fig = plt.figure(figsize=(16,10))
+ax = fig.gca()
+transpiled_circ.draw(output  = 'mpl', ax = ax, vertical_compression  = 'high', idle_wires = False)
+plt.title('Randomly created (transpiled) Simon\'s circuit for s = %s. Depth = %i' %(s,circ.depth()),fontsize=20)
+fig.savefig(figures_folder + '/backend=%s_time=%s_transpiled.png' 
+            %(device_backend.name(), cur_time ), bbox_inches='tight')
+plt.close(fig)
+
+print("Initial circuit depth = %i, transpiled circuit depth = %i"%(circ.depth(),transpiled_circ.depth()))
+
+
+
+#%% Obtain average circuit depths for transpiled circuits, using the usual Uf matrix method
+
+#Obtain transpiled depths of circuits
+list_of_depths = []
+num_circs = 10
+n = 3
+device_preference = 'ibmq_16_melbourne'#'ibmq_burlington'
+load_account()
+device_backend, _ = get_backends(device_preference = device_preference, n_qubits = 2 * n)
+for i in range(num_circs):
+    s = generate_random_s(n, seed_val = 0)
+    f = s_function(s, seed_val = 0)
+    Uf = create_Uf_matrix(f)
+    circ = get_Simon_circuit_from_matrix(Uf)
+    trans_circ = get_transpiled_circ(circ, backend = device_backend)
+    list_of_depths.append(trans_circ.depth())
+    
+# Obtained circuit depths: 4 and 109, 3092.5 for n=1 and n=2 n=3 respectively.
+    
+    
+    
+    
+#%% Prompt 1: Run a circuit multiple times using the compact circuit method
+
+n = 1
+num_shots = 20
+n_qubits = 2 * n
+num_circs = 50
+
+load_account()
+device_preference = ['ibmq_16_melbourne', 'ibmq_burlington']
+device_backend, simulator_backend = get_backends(device_preference = device_preference[1], n_qubits = n_qubits)
+
+
+s = '1'# generate_random_s(n)
+circ, transpiled_circ = create_compact_circuit(s, device_backend)
+circ_list = [circ for i in range(num_circs)]
+
+
+figures_folder = 'Figures/Prompt_1/'
+if not os.path.isdir(figures_folder):
+    os.makedirs(figures_folder) 
+######## Plot and save circuits    ################################
+fig = plt.figure(figsize=(16,10))
+ax = fig.gca()
+circ.draw(output  = 'mpl', ax = ax, vertical_compression  = 'high', idle_wires = False)
+plt.title('Circuit for s = %s' %(s),fontsize=20)
+fig.savefig(figures_folder + '/s=%s_backend=%s.png' 
+            %(s,device_backend.name() ), bbox_inches='tight')
+plt.close(fig)
+
+fig = plt.figure(figsize=(16,10))
+ax = fig.gca()
+transpiled_circ.draw(output  = 'mpl', ax = ax, vertical_compression  = 'high', idle_wires = False)
+plt.title('Transpiled circuit for s = %s' %(s),fontsize=20)
+fig.savefig(figures_folder + '/s=%s_backend=%s_transpiled.png' 
+            %(s,device_backend.name() ), bbox_inches='tight')
+plt.close(fig)
+################################################################
+
+
+
+#job_set_qc= job_manager.run(circ_list, backend = device_backend, 
+#                            name = 'multiple_circuits', optimization_level = 3)
+job_qc = execute(circ_list, backend = device_backend, shots = num_shots)
+job_monitor(job_qc) 
+qc_id = job_qc.job_id() 
 job_sim = execute(circ_list, backend = simulator_backend, shots = num_shots, optimization_level = 3)
-job_monitor(job_sim)
-print('Job id for simulation job' + job_sim.job_id())
-result_sim = job_sim.result()
+job_monitor(job_sim) 
+sim_id = job_sim.job_id() 
 
-# error mitigation
 meas_filter, calib_job_id = get_meas_filter(num_qubits = n_qubits, backend = device_backend, num_shots = 1024)
 print('Job id for mitigation circuits' + calib_job_id)
-mitigated_results = meas_filter.apply(result_qc)
-mitigated_counts = [mitigated_results.get_counts(i) for i in range(num_circs)]
 
 
-# print details to notepad file
+
 file2write=open("job_tracking.txt",'a')
-file2write.write("Multiple circuits run for n=%i, backend = %s, job ID = %s" 
-                 %(n,device_backend, job_qc.job_id()))
+file2write.write("Current time is " + str(datetime.now()) + " \n")
+file2write.write("Statistics for same circuit run multiple times: \n Multiple circuits run for n=%i, backend = %s, job ID = %s" 
+                 %(n, device_backend.name(), qc_id))
 file2write.write("\n Multiple circuits run for n=%i, backend = %s, job ID = %s" 
-                 %(n,simulator_backend, job_sim.job_id()))
+                 %(n, simulator_backend.name(), sim_id))
 file2write.write("\n Error mitigation circuits run for n=%i, backend = %s, job ID = %s \n \n"
                  %(n,device_backend, calib_job_id))
 file2write.close()
 
+
+result_sim = job_sim.result()
+result_qc = job_qc.result()
+mitigated_results = meas_filter.apply(result_qc)
 # Obtain y_lists in the form of dictionaries for the simulation job, the qc backend job, and mitigated counts
-raw_counts_qc = result_qc.get_counts()
-raw_counts_sim = result_sim.get_counts()
-raw_counts_mitigated = mitigated_counts
-list_y_dicts_sim = []
-list_y_dicts_qc = []
-list_y_dicts_mit = []
+raw_counts_qc = [result_qc.get_counts(i) for i in range(num_circs)]
+raw_counts_sim = [result_sim.get_counts(i) for i in range(num_circs)]
+raw_counts_mitigated = [mitigated_results.get_counts(i) for i in range(num_circs)]
 
-for i in range(num_circs):
-    _, cur_y_list_sim = give_y_vals(raw_counts_sim[i])
-    _, cur_y_list_qc = give_y_vals(raw_counts_qc[i])
-    _, cur_y_list_mit = give_y_vals(raw_counts_mitigated[i])
-    list_y_dicts_sim.append(cur_y_list_sim)
-    list_y_dicts_qc.append(cur_y_list_qc)
-    list_y_dicts_mit.append(cur_y_list_mit)
-
-# Plot and save all values
-legend = [device_backend.name(), simulator_backend.name(), 'After mitigation'] 
-figures_folder = 'Figures'
-if not os.path.isdir(figures_folder):
-    os.mkdir(figures_folder)    
+list_y_dicts_qc = [give_y_vals(raw_counts_qc[i])[1] for i in range(num_circs)]
+list_y_dicts_sim = [give_y_vals(raw_counts_sim[i])[1] for i in range(num_circs)]
+list_y_dicts_mit = [give_y_vals(raw_counts_mitigated[i])[1] for i in range(num_circs)]
 
 
-for expt_num in range(num_circs):
-    fig = plt.figure(figsize=(16,10))
-    ax = fig.gca()
-    plot_histogram([list_y_dicts_qc[expt_num],list_y_dicts_sim[expt_num],list_y_dicts_mit[expt_num]],
-                   legend=legend, ax = ax)
-#    plt.tight_layout()
-    plt.title('Comparison of outputs: n=%i, circuit_number = %i. Exact s = %s' %(n,expt_num,s_list[expt_num]),
-              fontsize=20)
-    
-    fig.savefig(figures_folder + '/n=%i_circ_num=%i_backend=%s.png' 
-                %(n, expt_num, device_backend.name()), bbox_inches='tight')
-    plt.close(fig)
-    
-# Raw processing assuming no error
+######## Plot and save histogram for experiment 1
+fig = plt.figure(figsize=(16,10))
+ax = fig.gca()
+legend = ['QC noisy', 'QC mitigated', 'simulator']
+plot_histogram([list_y_dicts_qc[0], list_y_dicts_mit[0], list_y_dicts_sim[0]],
+               legend=legend, ax = ax)
+plt.title('Comparison of outputs: n=%i Exact s = %s' %(n, s),
+          fontsize=20)
 
-list_of_s_lists_qc = [s_solution_unmodified(list(i)) for i in list_y_lists_qc]
-list_of_s_lists_sim = [s_solution_unmodified(list(i)) for i in list_y_lists_sim]
-list_of_s_lists_mit = [s_solution_unmodified(list(i)) for i in list_y_lists_mit]
-    
+fig.savefig(figures_folder + '/Representative_hisrogram_s=%s_backend=%s.png' 
+            %(s, device_backend.name()), bbox_inches='tight')
+plt.close(fig)
+########
 
-#%% Testing
+list_counts_0_qc = np.array([list_y_dicts_qc[i]['0'] for i in range(num_circs)])
+list_counts_0_mit = np.array([list_y_dicts_mit[i]['0'] for i in range(num_circs)])
+list_counts_0_sim = np.array([list_y_dicts_sim[i]['0'] for i in range(num_circs)])
+list_counts_1_qc = 20 - list_counts_0_qc
+list_counts_1_mit = 20 - list_counts_0_mit
+list_counts_1_sim = 20 - list_counts_0_sim
+avg_0_qc = np.average(list_counts_0_qc)
+avg_0_mit = np.average(list_counts_0_mit)
+
+######## Plot and save a figure with counts across different experiments
+fig = plt.figure(figsize=(16,10))
+ax = fig.gca()
+plt.rc('xtick',labelsize=15)
+plt.rc('ytick',labelsize=15)
+plt.title('Comparison of outputs for s = %s backend = %s'%(s, device_backend.name()),
+          fontsize=20)
+plt.xlabel('Experiment number',fontsize=20)
+plt.ylabel('Counts',fontsize=20)
+
+#plt.plot(list_counts_1_qc, '--.', label='Noisy QC: counts for 1', markersize = 15)
+#plt.plot(list_counts_1_sim, '--.', label='Simulator: counts for 1', markersize = 15)
+#plt.plot(list_counts_1_mit, '--.', label='Mitigated QC: counts for 1', markersize = 15)
+plt.plot(list_counts_0_qc, '--.', label='Noisy QC: counts for 0', markersize = 15)
+plt.plot(list_counts_0_sim, '--.', label='Simulator: counts for 0', markersize = 15)
+plt.plot(list_counts_0_mit, '--.', label='Mitigated QC: counts for 0', markersize = 15)
+plt.plot([0,num_circs], [avg_0_mit, avg_0_mit], '-', label='Mitigated QC: average', markersize = 15)
+plt.plot([0,num_circs], [avg_0_qc, avg_0_qc], '-', label='Noisy QC: average', markersize = 15)
+
+plt.legend(fontsize = 20)
+plt.ylim([0-1,num_shots+1])
+plt.yticks(ticks = np.arange(0,num_shots,2))
+plt.xticks(ticks = np.arange(0,num_circs,4))
+
+
+
+fig.savefig(figures_folder +
+            '/comparison_counts_n=%i_backend=%s.png'%(n, device_backend.name()),
+            bbox_inches='tight')
+plt.close(fig)
+
+### Save data
+results_folder = 'Results/Prompt_1/'
+if not os.path.isdir(results_folder):
+    os.makedirs(results_folder) 
+
+np.savez(results_folder+'n=%i_backend=%s_s=%s_num_circs=%i'%(n,device_backend.name(),s,num_circs),
+         n = n, num_shots = num_shots, num_circs = num_circs, device_backend = device_backend,
+         simulator_backend = simulator_backend, circ = circ, transpiled_circ = transpiled_circ,
+         qc_id = qc_id , sim_id = sim_id, calib_job_id = calib_job_id,
+         list_y_dicts_qc = list_y_dicts_qc,
+         list_y_dicts_sim = list_y_dicts_sim,
+         list_y_dicts_mit = list_y_dicts_mit,
+         avg_0_qc = avg_0_qc,
+         avg_0_mit = avg_0_mit) 
+
+#%% Prompt 1: Run a circuit multiple times using the compact circuit method
+##### For n = 2
 
 n = 2
-num_circs = 10
+num_shots = 20
+n_qubits = 2 * n
+num_circs = 50
+
+load_account()
+device_preference = ['ibmq_16_melbourne', 'ibmq_burlington']
+device_backend, simulator_backend = get_backends(device_preference = device_preference[1], n_qubits = n_qubits)
+
+
+s = '10'# generate_random_s(n)
+circ, transpiled_circ = create_compact_circuit(s, device_backend)
+circ_list = [circ for i in range(num_circs)]
+
+
+figures_folder = 'Figures/Prompt_1/'
+if not os.path.isdir(figures_folder):
+    os.makedirs(figures_folder) 
+######## Plot and save circuits    ################################
+fig = plt.figure(figsize=(16,10))
+ax = fig.gca()
+circ.draw(output  = 'mpl', ax = ax, vertical_compression  = 'high', idle_wires = False)
+plt.title('Circuit for s = %s' %(s),fontsize=20)
+fig.savefig(figures_folder + '/s=%s_backend=%s.png' 
+            %(s,device_backend.name() ), bbox_inches='tight')
+plt.close(fig)
+
+fig = plt.figure(figsize=(16,10))
+ax = fig.gca()
+transpiled_circ.draw(output  = 'mpl', ax = ax, vertical_compression  = 'high', idle_wires = False)
+plt.title('Transpiled circuit for s = %s' %(s),fontsize=20)
+fig.savefig(figures_folder + '/s=%s_backend=%s_transpiled.png' 
+            %(s,device_backend.name() ), bbox_inches='tight')
+plt.close(fig)
+################################################################
 
 
 
+#job_set_qc= job_manager.run(circ_list, backend = device_backend, 
+#                            name = 'multiple_circuits', optimization_level = 3)
+job_qc = execute(circ_list, backend = device_backend, shots = num_shots)
+job_monitor(job_qc) 
+qc_id = job_qc.job_id() 
+job_sim = execute(circ_list, backend = simulator_backend, shots = num_shots, optimization_level = 3)
+job_monitor(job_sim) 
+sim_id = job_sim.job_id() 
+
+meas_filter, calib_job_id = get_meas_filter(num_qubits = n_qubits, backend = device_backend, num_shots = 1024)
+print('Job id for mitigation circuits' + calib_job_id)
 
 
 
+file2write=open("job_tracking.txt",'a')
+file2write.write("Current time is " + str(datetime.now()) + " \n")
+file2write.write("Statistics for same circuit run multiple times: \n Multiple circuits run for n=%i, backend = %s, job ID = %s" 
+                 %(n, device_backend.name(), qc_id))
+file2write.write("\n Multiple circuits run for n=%i, backend = %s, job ID = %s" 
+                 %(n, simulator_backend.name(), sim_id))
+file2write.write("\n Error mitigation circuits run for n=%i, backend = %s, job ID = %s \n \n"
+                 %(n,device_backend, calib_job_id))
+file2write.close()
+
+
+result_sim = job_sim.result()
+result_qc = job_qc.result()
+mitigated_results = meas_filter.apply(result_qc)
+# Obtain y_lists in the form of dictionaries for the simulation job, the qc backend job, and mitigated counts
+raw_counts_qc = [result_qc.get_counts(i) for i in range(num_circs)]
+raw_counts_sim = [result_sim.get_counts(i) for i in range(num_circs)]
+raw_counts_mitigated = [mitigated_results.get_counts(i) for i in range(num_circs)]
+
+list_y_dicts_qc = [give_y_vals(raw_counts_qc[i])[1] for i in range(num_circs)]
+list_y_dicts_sim = [give_y_vals(raw_counts_sim[i])[1] for i in range(num_circs)]
+list_y_dicts_mit = [give_y_vals(raw_counts_mitigated[i])[1] for i in range(num_circs)]
+
+
+######## Plot and save histogram for experiment 1
+fig = plt.figure(figsize=(16,10))
+ax = fig.gca()
+legend = ['QC noisy', 'QC mitigated', 'simulator']
+plot_histogram([list_y_dicts_qc[0], list_y_dicts_mit[0], list_y_dicts_sim[0]],
+               legend=legend, ax = ax)
+plt.title('Comparison of outputs: n=%i Exact s = %s' %(n, s),
+          fontsize=20)
+
+fig.savefig(figures_folder + '/Representative_hisrogram_s=%s_backend=%s.png' 
+            %(s, device_backend.name()), bbox_inches='tight')
+plt.close(fig)
+########
+
+list_counts_0_qc = np.array([list_y_dicts_qc[i]['0'] for i in range(num_circs)])
+list_counts_0_mit = np.array([list_y_dicts_mit[i]['0'] for i in range(num_circs)])
+list_counts_0_sim = np.array([list_y_dicts_sim[i]['0'] for i in range(num_circs)])
+list_counts_1_qc = 20 - list_counts_0_qc
+list_counts_1_mit = 20 - list_counts_0_mit
+list_counts_1_sim = 20 - list_counts_0_sim
+avg_0_qc = np.average(list_counts_0_qc)
+avg_0_mit = np.average(list_counts_0_mit)
+
+######## Plot and save a figure with counts across different experiments
+fig = plt.figure(figsize=(16,10))
+ax = fig.gca()
+plt.rc('xtick',labelsize=15)
+plt.rc('ytick',labelsize=15)
+plt.title('Comparison of outputs for s = %s backend = %s'%(s, device_backend.name()),
+          fontsize=20)
+plt.xlabel('Experiment number',fontsize=20)
+plt.ylabel('Counts',fontsize=20)
+
+#plt.plot(list_counts_1_qc, '--.', label='Noisy QC: counts for 1', markersize = 15)
+#plt.plot(list_counts_1_sim, '--.', label='Simulator: counts for 1', markersize = 15)
+#plt.plot(list_counts_1_mit, '--.', label='Mitigated QC: counts for 1', markersize = 15)
+plt.plot(list_counts_0_qc, '--.', label='Noisy QC: counts for 0', markersize = 15)
+plt.plot(list_counts_0_sim, '--.', label='Simulator: counts for 0', markersize = 15)
+plt.plot(list_counts_0_mit, '--.', label='Mitigated QC: counts for 0', markersize = 15)
+plt.plot([0,num_circs], [avg_0_mit, avg_0_mit], '-', label='Mitigated QC: average', markersize = 15)
+plt.plot([0,num_circs], [avg_0_qc, avg_0_qc], '-', label='Noisy QC: average', markersize = 15)
+
+plt.legend(fontsize = 20)
+plt.ylim([0-1,num_shots+1])
+plt.yticks(ticks = np.arange(0,num_shots,2))
+plt.xticks(ticks = np.arange(0,num_circs,4))
 
 
 
+fig.savefig(figures_folder +
+            '/comparison_counts_n=%i_backend=%s.png'%(n, device_backend.name()),
+            bbox_inches='tight')
+plt.close(fig)
+
+### Save data
+results_folder = 'Results/Prompt_1/'
+if not os.path.isdir(results_folder):
+    os.makedirs(results_folder) 
+
+np.savez(results_folder+'n=%i_backend=%s_s=%s_num_circs=%i'%(n,device_backend.name(),s,num_circs),
+         n = n, num_shots = num_shots, num_circs = num_circs, device_backend = device_backend,
+         simulator_backend = simulator_backend, circ = circ, transpiled_circ = transpiled_circ,
+         qc_id = qc_id , sim_id = sim_id, calib_job_id = calib_job_id,
+         list_y_dicts_qc = list_y_dicts_qc,
+         list_y_dicts_sim = list_y_dicts_sim,
+         list_y_dicts_mit = list_y_dicts_mit,
+         avg_0_qc = avg_0_qc,
+         avg_0_mit = avg_0_mit) 
 
 
 
-
-
-    
-
-
-
-
-job_qc, result_qc = run_created_circuit(circ, backend = device_backend, num_shots = 20)
-print(job_qc())
-
-
-
-#%%
+#%% Before...............
 s = generate_random_s(n, seed_val = 4)
 #print(s)
 f = s_function(s, seed_val = 5)
 #print(f)
-Uf = create_Uf(f)
-circ = get_Simon_circuit(Uf)
+Uf = create_Uf_matrix(f)
+circ = get_Simon_circuit_from_matrix(Uf)
 circ_qc = get_transpiled_circ(circ, backend = device_backend)
 circ_sim = get_transpiled_circ(circ, backend = simulator_backend)
 print('Untranspiled circuit depth = %i, transpiled circuit depth qc = %i, transpiled circuit depth sim =%s'
@@ -580,6 +994,9 @@ plot_histogram([y_dict_qc, y_dict_sim, y_dict_mit], legend=legend)
 
 
 #%% 
+
+
+
 job_qc = retrieve_job_from_id('5edfdf84748037001236db67', backend = device_backend)
 job_sim = retrieve_job_from_id('5edfe02d65afea001180b719', backend = simulator_backend)
 result_sim = job_sim.result()
@@ -603,8 +1020,8 @@ result_qc = job_qc.result()
             list_s: List of strings, with each string being of length n. These will contain the solution of the search problem, as 
                     determined by the Grover's algorithm
         """
-        Uf = self.create_Uf(f)
-        circ = self.get_Simon_circuit(Uf)
+        Uf = self.create_Uf_matrix(f)
+        circ = self.get_Simon_circuit_from_matrix(Uf)
         counts = self.run_created_circuit(circ, num_shots = num_shots)
         list_y = [y for y in counts]
         list_s = self.s_solution(list_y)
@@ -832,8 +1249,8 @@ n = 3
 s = p.generate_random_s(n)
 f = p.s_function(s)
 ######
-Uf = p.create_Uf(f)
-circ = p.get_Simon_circuit(Uf)
+Uf = p.create_Uf_matrix(f)
+circ = p.get_Simon_circuit_from_matrix(Uf)
 counts = p.run_created_circuit(circ, num_shots = 40)
 list_y = [y for y in counts]
 list_s = p.s_solution(list_y)
