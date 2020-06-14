@@ -1,0 +1,140 @@
+n=1, backend = ibmq_burlington, job ID = 5edfdb7659a50a00120772b4
+ n=1, backend = ibmq_qasm_simulator, job ID = 5edfdb9bace2640013be8a0b 
+ 
+n=1, backend = ibmq_burlington, job ID = 5edfdb7659a50a00120772b4
+ n=1, backend = ibmq_qasm_simulator, job ID = 5edfdb9bace2640013be8a0b 
+ 
+n=1, backend = ibmqx2, job ID = 5edfdf84748037001236db67
+ n=1, backend = ibmq_qasm_simulator, job ID = 5edfe02d65afea001180b719 
+ 
+n=1, backend = ibmqx2, job ID = 5edff0ef748037001236dc71
+ n=1, backend = ibmq_qasm_simulator, job ID = 5edff1149e41d40012153b29 
+ 
+
+ 
+n=1, backend = ibmq_burlington, job ID = 5edff86c59a50a0012077465
+ n=1, backend = ibmq_qasm_simulator, job ID = 5edff8c86c24ac001371acdd 
+ 
+Calibration: n=1, backend = ibmq_burlington, job ID = 5edff8fc9e41d40012153b8a 
+ 
+n=1, backend = ibmq_burlington, job ID = 5edffb356c24ac001371acfa
+ n=1, backend = ibmq_qasm_simulator, job ID = 5edffb8a41d47c0013092185 
+ 
+n=2, backend = ibmq_burlington, job ID = 5ee002274f80e400126194f0
+ n=2, backend = ibmq_qasm_simulator, job ID = 5ee00289ace2640013be8c4f 
+ 
+Multiple circuits run for n=1, backend = ibmq_burlington, job ID = 5ee02734bb3a8700133de8ee
+ Multiple circuits run for n=1, backend = ibmq_qasm_simulator, job ID = 5ee029066c24ac001371ae32
+ Erro mitigation circuits run for n=1, backend = ibmq_burlington, job ID = 5ee02896e0148800132bdecf 
+
+These are good: ~~~~~~~~~~~~
+Multiple circuits run for n=1, backend = ibmq_burlington, job ID = 5ee02d0ae0148800132bdf06
+ Multiple circuits run for n=1, backend = ibmq_qasm_simulator, job ID = 5ee02d1df7f05f001382490c
+ Error mitigation circuits run for n=1, backend = ibmq_burlington, job ID = 5ee02d276c24ac001371ae61 
+ ~~~~~~~~~~~~
+
+
+Multiple circuits run for n=2, backend = ibmq_burlington, job ID = 5ee03dc8e245e900145fea0c
+ Multiple circuits run for n=2, backend = ibmq_qasm_simulator, job ID = 5ee03decace2640013be8e0c
+ Error mitigation circuits run for n=2, backend = ibmq_burlington, job ID = 5ee03df41299b500131a6c20 
+ 
+Multiple circuits run for n=2, backend = ibmq_burlington, job ID = 5ee04fd0e245e900145fead9
+ Multiple circuits run for n=2, backend = ibmq_qasm_simulator, job ID = 5ee04fea7b67e700126e3160
+ Error mitigation circuits run for n=2, backend = ibmq_burlington, job ID = 5ee04ff31299b500131a6ce6 
+ 
+Multiple circuits run for n=2, backend = ibmq_burlington, job ID = 5ee0508ef7f05f0013824a8d
+ Multiple circuits run for n=2, backend = ibmq_qasm_simulator, job ID = 5ee050a92146fc001307bf75
+ Error mitigation circuits run for n=2, backend = ibmq_burlington, job ID = 5ee050b3e0148800132be088 
+ 
+Multiple circuits run for n=1, backend = ibmq_burlington, job ID = 5ee0511de245e900145feae8
+ Multiple circuits run for n=1, backend = ibmq_qasm_simulator, job ID = 5ee0513516fa740012decf9f
+ Error mitigation circuits run for n=1, backend = ibmq_burlington, job ID = 5ee051472146fc001307bf82 
+ 
+Current time is 2020-06-10 09:28:38.011501 
+Multiple circuits run for n=1, backend = ibmq_burlington, job ID = 5ee10a0a459add001281c236
+ Multiple circuits run for n=1, backend = ibmq_qasm_simulator, job ID = 5ee10a1a4e03420013c4ef00
+ Error mitigation circuits run for n=1, backend = ibmq_burlington, job ID = 5ee10a24c926d60014451cf8 
+ 
+Current time is 2020-06-10 21:55:43.865589 
+Statistics for same circuit run multiple times: 
+ Multiple circuits run for n=1, backend = ibmq_burlington, job ID = 5ee1b5e38b01ca0012976855
+ Multiple circuits run for n=1, backend = ibmq_qasm_simulator, job ID = 5ee1b6d18b01ca0012976869
+ Error mitigation circuits run for n=1, backend = ibmq_burlington, job ID = 5ee1b76e3057ee00125ff76b 
+ 
+
+~~~~~~ This is good
+Current time is 2020-06-10 21:59:23.258180 
+Statistics for same circuit run multiple times: 
+ Multiple circuits run for n=1, backend = ibmq_burlington, job ID = 5ee1b9c1459add001281cc06
+ Multiple circuits run for n=1, backend = ibmq_qasm_simulator, job ID = 5ee1ba058b01ca0012976892
+ Error mitigation circuits run for n=1, backend = ibmq_burlington, job ID = 5ee1ba0d610e710013cb459d 
+ 
+Current time is 2020-06-10 23:27:04.388490 
+Statistics for same circuit run multiple times: 
+ Multiple circuits run for n=2, backend = ibmq_burlington, job ID = 5ee1cdfb610e710013cb46c7
+ Multiple circuits run for n=2, backend = ibmq_qasm_simulator, job ID = 5ee1ce7a610e710013cb46cf
+ Error mitigation circuits run for n=2, backend = ibmq_burlington, job ID = 5ee1ce82f8ee2200131eaf1a 
+ 
+Current time is 2020-06-11 19:57:40.687489 
+Statistics for same circuit run multiple times: 
+ Multiple circuits run for n=2, backend = ibmq_burlington, job ID = 5ee2eee751fde60011564098
+ Multiple circuits run for n=2, backend = ibmq_qasm_simulator, job ID = 5ee2eefcc926d60014453d76
+ Error mitigation circuits run for n=2, backend = ibmq_burlington, job ID = 5ee2ef04459add001281e228 
+ 
+~~~~~~ Uf stuff
+Current time is 2020-06-12 00:32:06.872716 
+
+Trying Uf exec time for n=7, backend = ibmq_16_melbourne, job ID = 5ee32d6d610e710013cb606a, s = 0110111Current time is 2020-06-12 00:45:18.800134 
+
+Trying Uf exec time for n=7, backend = ibmq_16_melbourne, job ID = 5ee32f774e03420013c51310, s = 0111011Current time is 2020-06-12 00:57:22.482505 
+
+Trying Uf exec time for n=7, backend = ibmq_16_melbourne, job ID = 5ee3328f51fde6001156451f, s = 1100111Current time is 2020-06-12 01:06:37.997041 
+
+Trying Uf exec time for n=7, backend = ibmq_16_melbourne, job ID = 5ee33563c926d6001445421e, s = 1001011Current time is 2020-06-12 01:09:50.054765 
+
+Trying Uf exec time for n=7, backend = ibmq_16_melbourne, job ID = 5ee3378e8b01ca001297842f, s = 1111100Current time is 2020-06-12 01:12:51.654130 
+
+Trying Uf exec time for n=7, backend = ibmq_16_melbourne, job ID = 5ee3384e459add001281e70d, s = 1000000Current time is 2020-06-12 01:18:33.424351 
+
+Trying Uf exec time for n=7, backend = ibmq_16_melbourne, job ID = 5ee339043057ee001260130b, s = 0010001Current time is 2020-06-12 01:20:45.046367 
+
+Trying Uf exec time for n=7, backend = ibmq_16_melbourne, job ID = 5ee33a5a8b01ca0012978462, s = 0110100Current time is 2020-06-12 01:23:39.439797 
+
+Trying Uf exec time for n=7, backend = ibmq_16_melbourne, job ID = 5ee33add4e03420013c513a3, s = 1001111Current time is 2020-06-12 01:26:09.048143 
+
+Trying Uf exec time for n=7, backend = ibmq_16_melbourne, job ID = 5ee33b8c51fde600115645a1, s = 0100001Current time is 2020-06-12 01:28:37.697349 
+
+Trying Uf exec time for n=7, backend = ibmq_16_melbourne, job ID = 5ee33c213057ee001260133f, s = 1010110Current time is 2020-06-12 01:31:26.902151 
+
+Trying Uf exec time for n=7, backend = ibmq_16_melbourne, job ID = 5ee33cb6f8ee2200131ec97f, s = 1100101Current time is 2020-06-12 01:35:36.581444 
+
+Trying Uf exec time for n=7, backend = ibmq_16_melbourne, job ID = 5ee33d5f3057ee0012601352, s = 1011011Current time is 2020-06-12 01:38:13.168498 
+
+Trying Uf exec time for n=7, backend = ibmq_16_melbourne, job ID = 5ee33e597605e90012f2af6c, s = 1111100Current time is 2020-06-12 01:39:54.772975 
+
+Trying Uf exec time for n=7, backend = ibmq_16_melbourne, job ID = 5ee33ef5c926d60014454295, s = 0011011Current time is 2020-06-12 01:43:07.778046 
+
+Trying Uf exec time for n=7, backend = ibmq_16_melbourne, job ID = 5ee33f5b610e710013cb6164, s = 1100101Current time is 2020-06-12 01:46:24.044672 
+
+Trying Uf exec time for n=7, backend = ibmq_16_melbourne, job ID = 5ee3401c459add001281e787, s = 0101011Current time is 2020-06-12 01:49:37.957243 
+
+Trying Uf exec time for n=7, backend = ibmq_16_melbourne, job ID = 5ee340e0459add001281e791, s = 0010111Current time is 2020-06-12 01:53:53.776623 
+
+Trying Uf exec time for n=7, backend = ibmq_16_melbourne, job ID = 5ee341a27605e90012f2af9a, s = 0010011Current time is 2020-06-12 01:57:52.275754 
+
+Trying Uf exec time for n=7, backend = ibmq_16_melbourne, job ID = 5ee342a2c926d600144542d2, s = 0110111Current time is 2020-06-12 11:29:49.099381 
+Current time is 2020-06-12 11:34:04.569049 
+
+Trying scaling with n, exec time for n=1, backend = ibmq_16_melbourne, job ID = 5ee3ca2c3057ee0012601b8fCurrent time is 2020-06-12 11:38:26.142705 
+
+Trying scaling with n, exec time for n=2, backend = ibmq_16_melbourne, job ID = 5ee3ca9d7605e90012f2b774Current time is 2020-06-12 11:41:05.075265 
+
+Trying scaling with n, exec time for n=3, backend = ibmq_16_melbourne, job ID = 5ee3cba2610e710013cb6942Current time is 2020-06-12 12:12:56.579443 
+
+Trying scaling with n, exec time for n=4, backend = ibmq_16_melbourne, job ID = 5ee3cc4151fde60011564dcfCurrent time is 2020-06-12 12:17:21.802351 
+
+Trying scaling with n, exec time for n=5, backend = ibmq_16_melbourne, job ID = 5ee3d3b951fde60011564e1dCurrent time is 2020-06-12 12:19:15.984865 
+
+Trying scaling with n, exec time for n=6, backend = ibmq_16_melbourne, job ID = 5ee3d4c2f8ee2200131ed1feCurrent time is 2020-06-12 12:20:09.647635 
+
+Trying scaling with n, exec time for n=7, backend = ibmq_16_melbourne, job ID = 5ee3d5344e03420013c51c43

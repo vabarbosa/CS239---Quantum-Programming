@@ -95,22 +95,62 @@ There are three ways to implement the bv algorithm:
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # Simon's algorithm
 
-First, import the module Simon.py
+[Note: We have included all the code we used to create all of the results and plots presented in the report. Please open the Simon.py file in an IDE to view it. The file is organized as follows: (i) Import libraries (ii) function definitions. (iii) Template for testing using the UF matrix method. (iv) Prompt 1 (n=1) (v) Prompt 1 (n=2)  (vi) Prompt 2  (vii) Prompt 3]
+
+
+To use our functions, first, import the module Simon.py
 
 The function f: {0,1}^n --> {0,1}^n which is satisfies f(x) = f(y) iff x + y \in {0,s} , is taken as input in the form of a numpy array of length 2**n. Each element of f is a string of length n. The output of f corresponding to a bit string s is stored at f[d(s)], where d(s) corresponds to the decimal representation of string s. For example, for n=3, the value of f(011) will be stored at f[3], since the binary string 011 corresponds to the number 3.
 
-Create a Program class instance p, using p = Program()
-There are two ways to implement the DJ algorithm:
-1. (Recommended) For a high level implementation, call the function simon_solution(f). This function takes f as input, obtains the oracle Uf, creates and runs the circuit, and interprets the results. It returns the values of s in the form of a list of bitstrings. The first element of this string will always be '0..0', with the remaining ones being the non-zero values predicted by Simon's algorithm.
-2. For a lower level implementation, follow this sequence:
-	>> p = Program()         
-	#### define f here
-	>>Uf = p.create_Uf(f)
-	>>circ = p.get_Simon_circuit(Uf)
-	>>counts = p.run_created_circuit(circ, num_shots = 20)
-	>>list_y = [y for y in counts]
-	>>list_s = p.s_solution(list_y)
+In order to implement our code, follow these steps:
+>>> load_account()
+In order to connect to IBM with your account credentials.
+>>> device_backend, simulator_backend = get_backends(device_preference, n_qubits)
+If device_preference is set to zero, then the least busy backend will be chosen. simulator_backend will also be set to be ibmq_qasm_simulator.
+
+>>> Uf = create_Uf_matrix(f)
+This will create the matrix corresponding to function f
+
+>>> circ = get_Simon_circuit_from_matrix(Uf)
+This will return a QuantumCircuit object, corresponding to Simon's circuit.
+
+>>> get_transpiled_circ(circ, backend)
+this will return a transpiled circuit with optimization_level set to 3 by default.
+
+>>> job, result = run_created_circuit(circ, backend = device_backend, num_shots)
+Executes a circuit on chosen backend
+
+>>> counts = result.get_counts() 
+>>> new_counts, dict_y = give_y_vals(counts)
+Interprets the counts obtained by the quantum hardware, and returns a dictionary dict_y containing only y values.
+(new_counts is useful only for debugging)
+ 
+[Alternatively, 
+>>> meas_filter, calib_job_id = get_meas_filter(num_qubits, backend, num_shots = 1024)
+Created a filter that will be used for measurement error mitigation
 	
+>>> mitigated_results = meas_filter.apply(result)
+The returned object has been processed to reduce measurement errors.
+
+>>> mitigated_counts = mitigated_result.get_counts()
+>>> _, mitigated_dict_y = give_y_vals(mitigated_counts)
+Counts after doing error mitigation.
+]
+
+>>> list_s = s_solution(list(mitigated_dict_y ))
+ Final output of Simon's algorithm
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+As noted in the report, because the circuit depth is very large using this method, we recommend another method, which is based on directly creating the oracle by expressing it in terms of NOT, CNOT and SWAP gates. However, for this part, we require s, instead of f.
+In order to implement this feature, replace the circuit preparation above by:
+>>> circ, transpiled_circ = create_compact_circuit(s, device_backend)
+s is a bit string of length n
+Returns a circuit circ, and its transpiled output transpiled_circ. Note that s has been specified, and not f. The create_compact_circuit chooses a function f corresponding to s randomly, and creates the corresponding oracle, and assembles Simon's circuit.
+
+After this point, the code remains as before.
+
+It is possible to create circuits using this procedure for any s. Even for n=7, the transpiled circuit depth on average lies in the range of 10-20, making it possible to execute it on ibmq_16_melbourne.
+
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # Grover
 grover is an object that contains all the relevant methods for Grover's algorithim as member functions
