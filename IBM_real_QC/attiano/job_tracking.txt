@@ -1,0 +1,155 @@
+Current time is 2020-06-12 15:55:00.030216 
+Multiple circuits run for n=1, backend = ibmq_burlington, job ID = 5ee4079b1e1552001af6a382
+ Multiple circuits run for n=1, backend = ibmq_qasm_simulator, job ID = 5ee407ab11b2de001adc00d2
+ Error mitigation circuits run for n=1, backend = ibmq_burlington, job ID = 5ee407b48603b7001a5ea9dc 
+ 
+Current time is 2020-06-12 15:56:42.872590 
+Multiple circuits run for n=1, backend = ibmq_burlington, job ID = 5ee408041e1552001af6a387
+ Multiple circuits run for n=1, backend = ibmq_qasm_simulator, job ID = 5ee40812d234f600199b0a7b
+ Error mitigation circuits run for n=1, backend = ibmq_burlington, job ID = 5ee4081be9fdc5001a0be4e1 
+ 
+Current time is 2020-06-12 16:46:30.941004 
+Multiple circuits run for n=1, backend = ibmq_london, job ID = 5ee413b1f3146b001a28ba74
+ Multiple circuits run for n=1, backend = ibmq_qasm_simulator, job ID = 5ee413bf552f12001af06365
+ Error mitigation circuits run for n=1, backend = ibmq_london, job ID = 5ee413c9d234f600199b0afd 
+ 
+Current time is 2020-06-12 16:47:37.446312 
+Multiple circuits run for n=1, backend = ibmq_london, job ID = 5ee413f5f3146b001a28ba78
+ Multiple circuits run for n=1, backend = ibmq_qasm_simulator, job ID = 5ee414038603b7001a5eaa61
+ Error mitigation circuits run for n=1, backend = ibmq_london, job ID = 5ee4140c11b2de001adc0159 
+ 
+Current time is 2020-06-12 16:53:25.941447 
+Multiple circuits run for n=1, backend = ibmq_london, job ID = 5ee41552547001001a92ed55
+ Multiple circuits run for n=1, backend = ibmq_qasm_simulator, job ID = 5ee415608603b7001a5eaa72
+ Error mitigation circuits run for n=1, backend = ibmq_london, job ID = 5ee415688603b7001a5eaa73 
+ 
+Current time is 2020-06-12 16:54:17.055912 
+Multiple circuits run for n=2, backend = ibmq_london, job ID = 5ee415831e1552001af6a40d
+ Multiple circuits run for n=2, backend = ibmq_qasm_simulator, job ID = 5ee41591d234f600199b0b14
+ Error mitigation circuits run for n=2, backend = ibmq_london, job ID = 5ee41599d234f600199b0b17 
+ 
+Current time is 2020-06-12 16:56:02.019278 
+Multiple circuits run for n=3, backend = ibmq_london, job ID = 5ee415d8cd46d2001ab0033d
+ Multiple circuits run for n=3, backend = ibmq_qasm_simulator, job ID = 5ee415f71e1552001af6a411
+ Error mitigation circuits run for n=3, backend = ibmq_london, job ID = 5ee41600d234f600199b0b20 
+ 
+Current time is 2020-06-12 17:03:26.052958 
+Multiple circuits run for n=4, backend = ibmq_london, job ID = 5ee41728d234f600199b0b2f
+ Multiple circuits run for n=4, backend = ibmq_qasm_simulator, job ID = 5ee417a211b2de001adc017b
+ Error mitigation circuits run for n=4, backend = ibmq_london, job ID = 5ee417aee9fdc5001a0be582 
+ 
+Current time is 2020-06-13 08:37:54.646677 
+Multiple circuits run for n=1, backend = ibmq_london, job ID = 5ee4f299f3146b001a28c427
+ Multiple circuits run for n=1, backend = ibmq_qasm_simulator, job ID = 5ee4f2bc8603b7001a5eb442
+ Error mitigation circuits run for n=1, backend = ibmq_london, job ID = 5ee4f2c50540b20019d1035a 
+ 
+Current time is 2020-06-13 08:38:53.929882 
+Multiple circuits run for n=2, backend = ibmq_london, job ID = 5ee4f2df1e1552001af6add2
+ Multiple circuits run for n=2, backend = ibmq_qasm_simulator, job ID = 5ee4f2f50540b20019d10361
+ Error mitigation circuits run for n=2, backend = ibmq_london, job ID = 5ee4f2fecd46d2001ab00d13 
+ 
+Current time is 2020-06-13 08:40:46.647641 
+Multiple circuits run for n=3, backend = ibmq_london, job ID = 5ee4f33fd234f600199b14f8
+ Multiple circuits run for n=3, backend = ibmq_qasm_simulator, job ID = 5ee4f3631e1552001af6add9
+ Error mitigation circuits run for n=3, backend = ibmq_london, job ID = 5ee4f36cf3146b001a28c430 
+ 
+Current time is 2020-06-13 09:22:02.017678 
+Multiple circuits run for n=1, backend = ibmq_london, job ID = 5ee4fcf0547001001a92f7ae
+ Multiple circuits run for n=1, backend = ibmq_qasm_simulator, job ID = 5ee4fd05d234f600199b1560
+ Error mitigation circuits run for n=1, backend = ibmq_london, job ID = 5ee4fd0e0540b20019d103c1 
+ 
+Current time is 2020-06-13 09:23:06.602815 
+Multiple circuits run for n=2, backend = ibmq_london, job ID = 5ee4fd36d234f600199b1563
+ Multiple circuits run for n=2, backend = ibmq_qasm_simulator, job ID = 5ee4fd4ce9fdc5001a0befb8
+ Error mitigation circuits run for n=2, backend = ibmq_london, job ID = 5ee4fd54f3146b001a28c497 
+ 
+Current time is 2020-06-13 09:25:06.791957 
+Multiple circuits run for n=3, backend = ibmq_london, job ID = 5ee4fda1552f12001af06d9b
+ Multiple circuits run for n=3, backend = ibmq_qasm_simulator, job ID = 5ee4fdc61e1552001af6ae4e
+ Error mitigation circuits run for n=3, backend = ibmq_london, job ID = 5ee4fdd0d234f600199b156a 
+ 
+Current time is 2020-06-13 10:13:36.268268 
+Multiple circuits run for n=1, backend = ibmq_london, job ID = 5ee5091a1e1552001af6aee8
+ Multiple circuits run for n=1, backend = ibmq_qasm_simulator, job ID = 5ee50928cd46d2001ab00e2b
+ Error mitigation circuits run for n=1, backend = ibmq_london, job ID = 5ee50930f3146b001a28c537 
+ 
+Current time is 2020-06-13 10:14:26.694852 
+Multiple circuits run for n=2, backend = ibmq_london, job ID = 5ee5094d8603b7001a5eb550
+ Multiple circuits run for n=2, backend = ibmq_qasm_simulator, job ID = 5ee5095be9fdc5001a0bf067
+ Error mitigation circuits run for n=2, backend = ibmq_london, job ID = 5ee50963cd46d2001ab00e2f 
+ 
+Current time is 2020-06-13 10:21:57.376269 
+Multiple circuits run for n=3, backend = ibmq_london, job ID = 5ee509a11e1552001af6aef2
+ Multiple circuits run for n=3, backend = ibmq_qasm_simulator, job ID = 5ee50b128603b7001a5eb56b
+ Error mitigation circuits run for n=3, backend = ibmq_london, job ID = 5ee50b1ce9fdc5001a0bf077 
+ 
+Current time is 2020-06-13 10:36:09.406122 
+Multiple circuits run for n=1, backend = ibmq_london, job ID = 5ee50e5bcd46d2001ab00e7f
+ Multiple circuits run for n=1, backend = ibmq_qasm_simulator, job ID = 5ee50e70cd46d2001ab00e80
+ Error mitigation circuits run for n=1, backend = ibmq_london, job ID = 5ee50e791e1552001af6af39 
+ 
+Current time is 2020-06-13 10:37:11.185171 
+Multiple circuits run for n=2, backend = ibmq_london, job ID = 5ee50e94547001001a92f892
+ Multiple circuits run for n=2, backend = ibmq_qasm_simulator, job ID = 5ee50ea211b2de001adc0c64
+ Error mitigation circuits run for n=2, backend = ibmq_london, job ID = 5ee50eb011b2de001adc0c65 
+ 
+Current time is 2020-06-13 10:38:58.986930 
+Multiple circuits run for n=3, backend = ibmq_london, job ID = 5ee50ef80540b20019d104c8
+ Multiple circuits run for n=3, backend = ibmq_qasm_simulator, job ID = 5ee50f17e9fdc5001a0bf0ba
+ Error mitigation circuits run for n=3, backend = ibmq_london, job ID = 5ee50f20552f12001af06e86 
+ 
+Current time is 2020-06-13 10:48:55.123415 
+Multiple circuits run for n=1, backend = ibmq_london, job ID = 5ee5115b11b2de001adc0c9d
+ Multiple circuits run for n=1, backend = ibmq_qasm_simulator, job ID = 5ee5116f547001001a92f8c1
+ Error mitigation circuits run for n=1, backend = ibmq_london, job ID = 5ee51178552f12001af06eb7 
+ 
+Current time is 2020-06-13 10:49:44.246617 
+Multiple circuits run for n=2, backend = ibmq_london, job ID = 5ee51192cd46d2001ab00ec0
+ Multiple circuits run for n=2, backend = ibmq_qasm_simulator, job ID = 5ee511a011b2de001adc0ca1
+ Error mitigation circuits run for n=2, backend = ibmq_london, job ID = 5ee511a8cd46d2001ab00ec3 
+ 
+Current time is 2020-06-13 10:51:31.373009 
+Multiple circuits run for n=3, backend = ibmq_london, job ID = 5ee511e4f3146b001a28c5c3
+ Multiple circuits run for n=3, backend = ibmq_qasm_simulator, job ID = 5ee51206547001001a92f8ca
+ Error mitigation circuits run for n=3, backend = ibmq_london, job ID = 5ee5120ef3146b001a28c5c6 
+ 
+Current time is 2020-06-13 11:43:08.881817 
+Multiple circuits run for n=1, backend = ibmq_london, job ID = 5ee51d6a547001001a92f96e
+ Multiple circuits run for n=1, backend = ibmq_qasm_simulator, job ID = 5ee51e27f3146b001a28c688
+ Error mitigation circuits run for n=1, backend = ibmq_london, job ID = 5ee51e2f8603b7001a5eb697 
+ 
+Current time is 2020-06-13 11:43:59.067733 
+Multiple circuits run for n=2, backend = ibmq_london, job ID = 5ee51e49e9fdc5001a0bf1b7
+ Multiple circuits run for n=2, backend = ibmq_qasm_simulator, job ID = 5ee51e570540b20019d105b4
+ Error mitigation circuits run for n=2, backend = ibmq_london, job ID = 5ee51e5f547001001a92f97a 
+ 
+Current time is 2020-06-13 12:42:24.718236 
+Multiple circuits run for n=1, backend = ibmq_london, job ID = 5ee52bf5d234f600199b1809
+ Multiple circuits run for n=1, backend = ibmq_qasm_simulator, job ID = 5ee52c0a0540b20019d10655
+ Error mitigation circuits run for n=1, backend = ibmq_london, job ID = 5ee52c12547001001a92fa33 
+ 
+Current time is 2020-06-13 12:43:20.194199 
+Multiple circuits run for n=2, backend = ibmq_london, job ID = 5ee52c2cd234f600199b180e
+ Multiple circuits run for n=2, backend = ibmq_qasm_simulator, job ID = 5ee52c40d234f600199b1810
+ Error mitigation circuits run for n=2, backend = ibmq_london, job ID = 5ee52c48552f12001af0702c 
+ 
+Current time is 2020-06-13 12:45:08.630732 
+Multiple circuits run for n=3, backend = ibmq_london, job ID = 5ee52c850540b20019d1065d
+ Multiple circuits run for n=3, backend = ibmq_qasm_simulator, job ID = 5ee52caaf3146b001a28c73f
+ Error mitigation circuits run for n=3, backend = ibmq_london, job ID = 5ee52cb20540b20019d10660 
+ 
+Current time is 2020-06-13 16:44:21.279455 
+Multiple circuits run for n=1, backend = ibmq_london, job ID = 5ee564b08603b7001a5eb9e1
+ Multiple circuits run for n=1, backend = ibmq_qasm_simulator, job ID = 5ee564bdd234f600199b1ac3
+ Error mitigation circuits run for n=1, backend = ibmq_london, job ID = 5ee564c6e9fdc5001a0bf547 
+ 
+Current time is 2020-06-13 16:45:10.583934 
+Multiple circuits run for n=2, backend = ibmq_london, job ID = 5ee564e1d234f600199b1ac7
+ Multiple circuits run for n=2, backend = ibmq_qasm_simulator, job ID = 5ee564eee9fdc5001a0bf549
+ Error mitigation circuits run for n=2, backend = ibmq_london, job ID = 5ee564f711b2de001adc10cf 
+ 
+Current time is 2020-06-13 16:46:57.948674 
+Multiple circuits run for n=3, backend = ibmq_london, job ID = 5ee56538552f12001af07301
+ Multiple circuits run for n=3, backend = ibmq_qasm_simulator, job ID = 5ee565581e1552001af6b3a8
+ Error mitigation circuits run for n=3, backend = ibmq_london, job ID = 5ee5656011b2de001adc10d2 
+ 
