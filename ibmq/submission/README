@@ -1,0 +1,162 @@
+# DJ
+First, import the module dj.py
+
+The function f: {0,1}^n --> {0,1} which is either constant or balanced, is taken as input in the form of a numpy array of length 2**n. Each element of f is an integer 0 or 1. The output of f corresponding to a bit string s is stored at f[d(s)], where d(s) corresponds to the decimal representation of string s. For example, for n=3, the value of f(011) will be stored at f[3], since the binary string 011 corresponds to the number 3.
+
+All the code is organized in a class. First declare the class then to run:
+There are three ways to implement the DJ algorithm:
+1. (Recommended) For a high level implementation, call the function run(f). This function takes f as input, obtains the oracle Uf, creates and runs the circuit, and interprets the results. It runs by default on burlington. It returns the most frequent measurement.
+
+>>> p = Program()
+>>> counts, answer, assemble_time, run_time = p.run(f)
+>>> print(answer)
+# 0^n if f is constant
+# ow f is balanced
+
+2. For a lower level implementation, follow this sequence:
+>>> p = Program()
+>>> provider = IBMQ.enable_account(API_TOKEN)
+>>> backend = provider.backends.ibmq_burlington
+# create a gate from f
+>>> uf = p.create_uf(n, f)
+# build the dj circuit
+>>> circuit = p.build_circuit(n, uf)
+# measure the circuit h
+>>> counts, assembly_time, run_time = p.measure(circuit, backend)
+>>> print(counts)
+# counts is a dictionary of counts of measurements
+
+3. To get an aribitrary uf that runs on any machine
+>>> p = Program()
+>>> provider = IBMQ.enable_account(API_TOKEN)
+>>> backend = provider.backends.ibmq_16_melbourne
+>>> n = 10
+>>> uf = p.get_uf(n, "constant0")
+# f(x) = 0
+>>> uf = p.get_uf(n, "constant1")
+# f(x) = 0
+>>> uf = p.get_uf(n, "balanced")
+# f(x) is balanced
+# build the dj circuit
+>>> circuit = p.build_circuit(n, None, True, uf)
+# measure the circuit h
+>>> counts, assembly_time, run_time = p.measure(circuit, backend)
+>>> print(counts)
+# counts is a dictionary of counts of measurements
+
+		
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# BV
+First, import the module BV.py
+
+The function f: {0,1}^n --> {0,1} which is satisfies f(x) = a . x + b, is taken as input in the form of a numpy array of length 2**n. Each element of f is an integer 0 or 1. The output of f corresponding to a bit string s is stored at f[d(s)], where d(s) corresponds to the decimal representation of string s. For example, for n=3, the value of f(011) will be stored at f[3], since the binary string 011 corresponds to the number 3.
+
+There are three ways to implement the bv algorithm:
+1. (Recommended) For a high level implementation, call the function run_BV(f). This function takes f as input, obtains the oracle Uf, creates and runs the circuit, and interprets the results. It returns the value of a as a string. Note the will call f(0) to determine b. It runs by default on burlington. It returns the most frequent measurement.
+
+>>> p = Program()
+>>> counts, answer, assemble_time, run_time = p.run(f)
+>>> print(answer)
+# prints (a,b) where f(x) = a . x + b
+
+2. For a lower level implementation, follow this sequence:
+>>> p = Program()
+>>> provider = IBMQ.enable_account(API_TOKEN)
+>>> backend = provider.backends.ibmq_burlington
+# create a gate from f
+>>> uf = p.create_uf(n, f)
+# build the dj circuit
+>>> circuit = p.build_circuit(n, uf)
+# measure the circuit h
+>>> counts, assembly_time, run_time = p.measure(circuit, backend)
+>>> print(counts)
+# counts is a dictionary of counts of measurements where each measurement represents a in reverse
+>>> a = p.evaluate(counts)
+# returns most frequent item
+>>> b = f[0]
+
+3. To get a simplified uf to run on any machine. Note this uses a hack where a, b are found classically and then used to build uf
+>>> p = Program()
+>>> provider = IBMQ.enable_account(API_TOKEN)
+>>> backend = provider.backends.ibmq_16_melbourne
+>>> n = 10
+>>> uf = p.get_uf(n, f)
+# build the dj circuit
+>>> circuit = p.build_circuit(n, None, True, uf)
+# measure the circuit h
+>>> counts, assembly_time, run_time = p.measure(circuit, backend)
+>>> print(counts)
+# counts is a dictionary of counts of measurements
+>>> a = p.evaluate(counts, False)
+# returns most frequent item
+>>> b = f[0]
+
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# Simon's algorithm
+
+First, import the module Simon.py
+
+The function f: {0,1}^n --> {0,1}^n which is satisfies f(x) = f(y) iff x + y \in {0,s} , is taken as input in the form of a numpy array of length 2**n. Each element of f is a string of length n. The output of f corresponding to a bit string s is stored at f[d(s)], where d(s) corresponds to the decimal representation of string s. For example, for n=3, the value of f(011) will be stored at f[3], since the binary string 011 corresponds to the number 3.
+
+Create a Program class instance p, using p = Program()
+There are two ways to implement the DJ algorithm:
+1. (Recommended) For a high level implementation, call the function simon_solution(f). This function takes f as input, obtains the oracle Uf, creates and runs the circuit, and interprets the results. It returns the values of s in the form of a list of bitstrings. The first element of this string will always be '0..0', with the remaining ones being the non-zero values predicted by Simon's algorithm.
+2. For a lower level implementation, follow this sequence:
+	>> p = Program()         
+	#### define f here
+	>>Uf = p.create_Uf(f)
+	>>circ = p.get_Simon_circuit(Uf)
+	>>counts = p.run_created_circuit(circ, num_shots = 20)
+	>>list_y = [y for y in counts]
+	>>list_s = p.s_solution(list_y)
+	
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# Grover
+grover is an object that contains all the relevant methods for Grover's algorithim as member functions
+
+Simple-use case example:
+
+>>> from grover import grover
+>>> g = grover()
+>>> result, compute_time, numerical_prob, theoretical_prob = g.run_grover(f,n,a)
+
+NOTE: Oracle function is input in the form of a numpy array with 2^n indicies, and each index 'x' either evaluates to 1/0 e.g f[x]= 1 or f[x]=0
+
+Advanced use:
+
+To run grover.execute_grover(circuit,n,f,num_shots=1000,backend='qasm_simulator') you need to input the corresponding circuit definition from grover.create_circuit(G,n,a) which itself needs the G Qiskit gate object built from the numpy matrix that grover.create_G(f,n) returns. This requires as input: f, the oracle function, n, the number of qubits, and a, the number of inputs that evaluate to 1. grover.execute_grover() then returns the bit string |x> that corresponds to an input x that evaluates 1, the run time of 1000 shots, and the numerical probability of success.
+	(This can be proven by the proof of grovers algorithm that applying G = -(H^n)zo(H^n)zf k times where k is proportional to the sqrt(2^n) sets the state of the qubits to match x with overwhelming probability.)
+	
+	>> from qiskit.quantum_info.operators import Operator
+	>> from grover import grover
+		Import the relevant packages
+	>> G_matrix = grover.create_G(f,n)
+		Creates the unitary matrix G for n qubits.
+	>> G = Operator(G_matrix)
+		Create a qiskit gate object using G_matrix
+	>> G_circuit = grover.create_circuit(G,n,a)
+		Creates qikit circuit object using the G qiskit gate object
+	>> result, computation_time, numerical_prob = grover.execute_grover(circuit,n,f,num_shots=1000,backend='qasm_simulator')
+		Pass grover's circuit for your oracle function, and the value of n in order to execute the grover circuit. The function will return ket{x}, the execution time of the quantum circuit, and the numerical probability of success over num_shots.
+			
+To test correctness you can pass in the oracle function and the result of Grovers algorithm to check_correctness.
+	>> Correct = g.check_correctness(func,result,n)
+	
+If you run "python grover.py" the command line as the main argument to the python interpreter it runs exhaustive testing for n=1-6 qubits, with the results averaged over 1000 trials, for a randomly chosen f with a=1->3 (the number of inputs to f(X) that equal 1 -> |x| s.t. f(x)=1 )
+
+	>> $python grover.py
+
+grover.py contains the following set of member functions in the grover object:
+	
+	Run_grover: can be used to run grover with an arbitrary oracle function f, returns the result ket{x}, the run-time, the numerical and theoretical probability of success 
+	Check_correctness: checks to make sure the f(x)=1 for the x output from Grover's algorithm returns true if true.
+	Convert_n_bit_string_to_int: converts an n bit string representing an unsigned int to an int
+	Convert_int_to_n_bit_string: converts an int to an unsigned representation of an int
+	Reverse_bit_int: Converts an integer to a bit string, flips the bit string, then converts the integer back
+	Create_G: Creates the unitary matrix G that corresponds to k iterations of Grover's algorithm for n qubits
+	Create_circuit: Creates the qiskit circuit object that runs a grover's algrorithm iteration k times on the oracle function f for n qubits and a, the number of inputs x that evaluate to 1. Also returns the theoretical probability of success. 
+	H_tensored: creates a numpy array that corresponds to a 2^n by 2^n Hadamard matrix
+	All_f: creates all possible functions that return f(x)=1 for a given number of qubits n, and a, the number of inputs x that evaluate to 1
+	Calc_lim: calculates how many iterations (k) of grovers algorithm should be ran to ensure it returns the correct value for a given number of qubits, and a, the number of inputs x that evaluate to 1
+	Execute_Grover: executes the input qiskit circuit defintion num_shots times that runs a grover's algrorithm iteration k times on the oracle function f. Uses the simulator defined by back_end.
