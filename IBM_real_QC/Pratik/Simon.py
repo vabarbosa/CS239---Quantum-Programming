@@ -17,15 +17,6 @@ from qiskit.providers.ibmq.managed import IBMQJobManager
 #qiskit.__version__
 #qiskit.__qiskit_version__
 
-
-
-# retrieving a previously run job
-
-#job_id = job_exp.job_id()
-#print('JOB ID: {}'.format(job_id))
-#retrieved_job = backend.retrieve_job(job_id)
-#retrieved_job.result().get_counts(qc)
-
 #%% Load required modules
 import numpy as np
 import os
@@ -557,6 +548,30 @@ def create_compact_circuit(s, device_backend):
     
     
     return circ, transpiled_circ
+
+
+
+def frac_prod_zero(y_dict, s):
+    """
+    For any given bitstring s, and a dictionary of y values, calculate the fraction of times y.s = 0
+    Args:
+        s: strings of only zeros and ones
+        y_dict: Dictionary of y values
+                The keys are bitstrings corresponding to y values
+                The values are the number of times the corresponding y occured
+    Returns:
+        frac_perp: float- fraction of the times y.s=0 was satisfied
+    """
+    tot_num = sum(y_dict.values())
+    times_perp = 0
+    for cur_y, freq in y_dict.items():
+        is_perp = dot_product(cur_y,s)
+        if is_perp:
+            times_perp += freq 
+    frac_perp = times_perp / tot_num
+    
+    return frac_perp
+            
 #%%  Using the Uf matrix method 
 n = 1
 num_circs = 10
@@ -826,9 +841,11 @@ plt.close(fig)
 job_qc = execute(circ_list, backend = device_backend, shots = num_shots)
 job_monitor(job_qc) 
 qc_id = job_qc.job_id() 
+print(qc_id)
 job_sim = execute(circ_list, backend = simulator_backend, shots = num_shots, optimization_level = 3)
 job_monitor(job_sim) 
 sim_id = job_sim.job_id() 
+print(sim_id)
 
 meas_filter, calib_job_id = get_meas_filter(num_qubits = n_qubits, backend = device_backend, num_shots = 1024)
 print('Job id for mitigation circuits' + calib_job_id)
@@ -863,7 +880,7 @@ list_y_dicts_mit = [give_y_vals(raw_counts_mitigated[i])[1] for i in range(num_c
 fig = plt.figure(figsize=(16,10))
 ax = fig.gca()
 legend = ['QC noisy', 'QC mitigated', 'simulator']
-plot_histogram([list_y_dicts_qc[0], list_y_dicts_mit[0], list_y_dicts_sim[0]],
+plot_histogram([list_y_dicts_qc[2], list_y_dicts_mit[2], list_y_dicts_sim[2]],
                legend=legend, ax = ax)
 plt.title('Comparison of outputs: n=%i Exact s = %s' %(n, s),
           fontsize=20)
@@ -873,45 +890,48 @@ fig.savefig(figures_folder + '/Representative_hisrogram_s=%s_backend=%s.png'
 plt.close(fig)
 ########
 
-list_counts_0_qc = np.array([list_y_dicts_qc[i]['0'] for i in range(num_circs)])
-list_counts_0_mit = np.array([list_y_dicts_mit[i]['0'] for i in range(num_circs)])
-list_counts_0_sim = np.array([list_y_dicts_sim[i]['0'] for i in range(num_circs)])
-list_counts_1_qc = 20 - list_counts_0_qc
-list_counts_1_mit = 20 - list_counts_0_mit
-list_counts_1_sim = 20 - list_counts_0_sim
-avg_0_qc = np.average(list_counts_0_qc)
-avg_0_mit = np.average(list_counts_0_mit)
+list_all_n_bin_strings = [give_binary_string(z,n) for z in range(2**n)]
+arr_counts = np.zeros([2**n, num_circs, 3])  # y index, circuit index, which type of result (backend)
+for y_ind, possible_y in enumerate(list_all_n_bin_strings):
+    for cur_circ_num in range(num_circs):
+        if possible_y in list_y_dicts_qc[cur_circ_num]:
+            arr_counts[y_ind, cur_circ_num, 0] = list_y_dicts_qc[cur_circ_num][possible_y]
+        if possible_y in list_y_dicts_mit[cur_circ_num]:
+            arr_counts[y_ind, cur_circ_num, 1] = list_y_dicts_mit[cur_circ_num][possible_y]
+        if possible_y in list_y_dicts_sim[cur_circ_num]:
+            arr_counts[y_ind, cur_circ_num, 2] = list_y_dicts_sim[cur_circ_num][possible_y]
 
+avg_counts_arr = np.average(arr_counts, axis = 1)
 ######## Plot and save a figure with counts across different experiments
-fig = plt.figure(figsize=(16,10))
-ax = fig.gca()
-plt.rc('xtick',labelsize=15)
-plt.rc('ytick',labelsize=15)
-plt.title('Comparison of outputs for s = %s backend = %s'%(s, device_backend.name()),
-          fontsize=20)
-plt.xlabel('Experiment number',fontsize=20)
-plt.ylabel('Counts',fontsize=20)
 
-#plt.plot(list_counts_1_qc, '--.', label='Noisy QC: counts for 1', markersize = 15)
-#plt.plot(list_counts_1_sim, '--.', label='Simulator: counts for 1', markersize = 15)
-#plt.plot(list_counts_1_mit, '--.', label='Mitigated QC: counts for 1', markersize = 15)
-plt.plot(list_counts_0_qc, '--.', label='Noisy QC: counts for 0', markersize = 15)
-plt.plot(list_counts_0_sim, '--.', label='Simulator: counts for 0', markersize = 15)
-plt.plot(list_counts_0_mit, '--.', label='Mitigated QC: counts for 0', markersize = 15)
-plt.plot([0,num_circs], [avg_0_mit, avg_0_mit], '-', label='Mitigated QC: average', markersize = 15)
-plt.plot([0,num_circs], [avg_0_qc, avg_0_qc], '-', label='Noisy QC: average', markersize = 15)
-
-plt.legend(fontsize = 20)
-plt.ylim([0-1,num_shots+1])
-plt.yticks(ticks = np.arange(0,num_shots,2))
-plt.xticks(ticks = np.arange(0,num_circs,4))
-
-
-
-fig.savefig(figures_folder +
-            '/comparison_counts_n=%i_backend=%s.png'%(n, device_backend.name()),
-            bbox_inches='tight')
-plt.close(fig)
+for y_ind, possible_y in enumerate(list_all_n_bin_strings):
+    
+    fig = plt.figure(figsize=(16,10))
+    ax = fig.gca()
+    plt.rc('xtick',labelsize=15)
+    plt.rc('ytick',labelsize=15)
+    plt.title('Comparison of outputs for s = %s backend = %s'%(s, device_backend.name()),
+              fontsize=20)
+    plt.xlabel('Experiment number',fontsize=20)
+    plt.ylabel('Counts',fontsize=20)
+    plt.plot(arr_counts[y_ind,:,0], '--.', label='Noisy QC: counts for %s'%possible_y, markersize = 15)
+    plt.plot(arr_counts[y_ind,:,1], '--.', label='Simulator: counts for %s'%possible_y, markersize = 15)
+    plt.plot(arr_counts[y_ind,:,2], '--.', label='Mitigated QC: counts for %s'%possible_y, markersize = 15)
+    plt.plot([0,num_circs], [avg_counts_arr[y_ind,1], avg_counts_arr[y_ind,1]], '-', label='Mitigated QC: average', markersize = 15)
+    plt.plot([0,num_circs], [avg_counts_arr[y_ind,0], avg_counts_arr[y_ind,0]], '-', label='Noisy QC: average', markersize = 15)
+    plt.plot([0,num_circs], [avg_counts_arr[y_ind,2], avg_counts_arr[y_ind,2]], '-', label='Simulator: average', markersize = 15)
+    
+    plt.legend(fontsize = 20)
+    plt.ylim([0-1,num_shots+1])
+    plt.yticks(ticks = np.arange(0,num_shots,2))
+    plt.xticks(ticks = np.arange(0,num_circs,4))
+    
+    
+    
+    fig.savefig(figures_folder +
+                '/comparison_counts_n=%i_backend=%s_y=%s.png'%(n, device_backend.name(),possible_y),
+                bbox_inches='tight')
+    plt.close(fig)
 
 ### Save data
 results_folder = 'Results/Prompt_1/'
@@ -925,320 +945,384 @@ np.savez(results_folder+'n=%i_backend=%s_s=%s_num_circs=%i'%(n,device_backend.na
          list_y_dicts_qc = list_y_dicts_qc,
          list_y_dicts_sim = list_y_dicts_sim,
          list_y_dicts_mit = list_y_dicts_mit,
-         avg_0_qc = avg_0_qc,
-         avg_0_mit = avg_0_mit) 
+         arr_counts = arr_counts, avg_counts_arr = avg_counts_arr) 
+
+#%%  Prompt 2
+## Create a number of circuits corresponding to different values of s, chosen randomly. 
+## Obtain a histogram of execution times
+
+n = 7
+num_shots = 20
+n_qubits = 2 * n
+num_circs = 20
+
+load_account()
+device_preference = ['ibmq_16_melbourne', 'ibmq_burlington']
+device_backend, simulator_backend = get_backends(device_preference = device_preference[0], n_qubits = n_qubits)
 
 
 
-#%% Before...............
-s = generate_random_s(n, seed_val = 4)
-#print(s)
-f = s_function(s, seed_val = 5)
-#print(f)
-Uf = create_Uf_matrix(f)
-circ = get_Simon_circuit_from_matrix(Uf)
-circ_qc = get_transpiled_circ(circ, backend = device_backend)
-circ_sim = get_transpiled_circ(circ, backend = simulator_backend)
-print('Untranspiled circuit depth = %i, transpiled circuit depth qc = %i, transpiled circuit depth sim =%s'
-      %(circ.depth(), circ_qc.depth(), circ_sim.depth()))
+s_list = []
+circ_list = []
+transpiled_circ_list = []
+transpilation_time_list = []
+for ind in range(num_circs):
+    s = generate_random_s(n)
+    s_list.append(s)
+    start = time.time()
+    circ, transpiled_circ = create_compact_circuit(s, device_backend)
+    end = time.time()
+    transpilation_time_list.append(end-start)
+    
+    circ_list.append(circ)
+    transpiled_circ_list.append(transpiled_circ)
+    
 
-job_qc, result_qc = run_created_circuit(circ, backend = device_backend, num_shots = 20)
-print(job_qc())
-job_monitor(job_qc)
-job_sim, result_sim = run_created_circuit(circ, backend = simulator_backend, num_shots = 20)
-print(job_sim.job_id())
-job_monitor(job_sim)
+jobs_id_list = []
+for i in range(num_circs):
+    cur_trans_circ = transpiled_circ_list[i]
+    job_qc = execute(cur_trans_circ, backend = device_backend, shots = num_shots)
+    job_monitor(job_qc) 
+    qc_id = job_qc.job_id() 
+    print("Job number %i, corresponding to ID=%s is done!"%(i,qc_id))
+    file2write=open("job_tracking.txt",'a')
+    file2write.write("Current time is " + str(datetime.now()) + " \n")
+    file2write.write("\nTrying Uf exec time for n=%i, backend = %s, job ID = %s, s = %s" 
+                     %(n, device_backend.name(), qc_id, s_list[i]))
+    file2write.close()
+    jobs_id_list.append(qc_id)
+#    time.sleep(60*10)
+    
 
-# Save job id
-file2write=open("job_tracking.txt",'a')
-file2write.write("n=%i, backend = %s, job ID = %s" %(n,device_backend, job_qc.job_id()))
-file2write.write("\n n=%i, backend = %s, job ID = %s \n \n" %(n,simulator_backend, job_sim.job_id()))
-file2write.close()
+circ_run_time_arr = []
+circ_depth_arr = []
+y_counts_list_of_dicts = []
+for i in range(num_circs):
+    job_id = jobs_id_list[i]
+    job = retrieve_job_from_id(job_id, backend = device_backend)
+    result = job.result()
+    circ_run_time_arr.append(result.time_taken)
+    circ_depth_arr.append(transpiled_circ_list[i].depth())
+    #### Also obtain the fraction of time y.s was 0
+    raw_counts = result.get_counts()
+    y_counts_list_of_dicts.append(give_y_vals(raw_counts)[1])
 
-#plot_histograms for comparison
-legend = ['On '+ device_backend.name(), 'On '+simulator_backend.name()]
-plot_histogram([result_qc.get_counts(), result_sim.get_counts()], legend=legend)
+    
+    
+frac_perp_arr = [frac_prod_zero(y_counts_list_of_dicts[i], s_list[i]) for i in range(num_circs)]
 
 
-# Calibration circuits
-# Generate the calibration circuits
-meas_calibs, state_labels = complete_meas_cal(qr = circ.qregs[0], 
-                                              circlabel='measureErrorMitigation')
-meas_calibs[1].draw()
-job_calib = qiskit.execute(meas_calibs, backend = device_backend, shots=1024, optimization_level = 0)
-print(job_calib.job_id())
-job_monitor(job_calib)
 
-file2write=open("job_tracking.txt",'a')
-file2write.write("Calibration: n=%i, backend = %s, job ID = %s \n \n" %(n,device_backend, job_calib.job_id()))
-file2write.close()
 
-cal_results = job_calib.result()
-#plot_histogram(cal_results.get_counts(meas_calibs[1]))
 
-meas_fitter = CompleteMeasFitter(cal_results, state_labels)
-meas_fitter.plot_calibration()
-#print(meas_fitter.cal_matrix)
-meas_filter = meas_fitter.filter
-# Results with mitigation
-mitigated_results = meas_filter.apply(result_qc)
-mitigated_counts = mitigated_results.get_counts(0)
 
-legend = ['On '+ device_backend.name(), 'On '+simulator_backend.name(), 'Mitigated counts']
-plot_histogram([result_qc.get_counts(), result_sim.get_counts(), mitigated_counts], legend=legend)
+# save results to to file
+results_folder = 'Results/Prompt_2/'
+if not os.path.isdir(results_folder):
+    os.makedirs(results_folder) 
 
-new_counts_sim, y_dict_sim = give_y_vals(result_sim.get_counts())
-new_counts_qc, y_dict_qc = give_y_vals(result_qc.get_counts())
-new_counts_mit, y_dict_mit = give_y_vals(mitigated_counts)
-plot_histogram([y_dict_qc, y_dict_sim, y_dict_mit], legend=legend)
+np.savez(results_folder+'n=%i_backend=%s_s=%s_num_circs=%i'%(n,device_backend.name(),s,num_circs),
+         n = n, num_circs = num_circs, device_backend = device_backend, 
+         simulator_backend = simulator_backend, s_list = s_list,
+         circ_list = circ_list, transpiled_circ = transpiled_circ, jobs_id_list = jobs_id_list,
+         transpilation_time_list = transpilation_time_list, circ_run_time_arr = circ_run_time_arr,
+         circ_depth_arr = circ_depth_arr, frac_perp_arr = frac_perp_arr,
+         y_counts_list_of_dicts = y_counts_list_of_dicts)
+
+
+###### Save the two historgram- one for transpilation, and the other for run time, as well as circuit depth
+figures_folder = 'Figures/Prompt_2/'
+if not os.path.isdir(figures_folder):
+    os.makedirs(figures_folder) 
+
+plt.rcParams["font.family"] = "serif"
+
+
+### Plot run time histogram
+fig = plt.figure(figsize=(16,10))
+plt.hist(circ_run_time_arr)
+plt.title('Dependence of execution time on $U_f$ (Simon\'s algorithm)', fontsize=25)
+plt.xlabel('Execution time (s)',fontsize=20)
+plt.ylabel('Frequency of occurence',fontsize=20)
+plt.xticks(fontsize=15)
+plt.yticks(fontsize=15)
+
+fig.savefig(figures_folder+'/n=%i_backend=%s_runtime.png', bbox_inches='tight')
+plt.close(fig)      
+            
+
+### Plot transpilation time histogram
+fig = plt.figure(figsize=(16,10))
+plt.hist(transpilation_time_list)
+plt.title('Dependence of transpilation time on $U_f$ (Simon\'s algorithm)', fontsize=25)
+plt.xlabel('Transpilation time (s)',fontsize=20)
+plt.ylabel('Frequency of occurence',fontsize=20)
+plt.xticks(fontsize=15)
+plt.yticks(fontsize=15)
+fig.savefig(figures_folder+'/n=%i_backend=%s_transpilation.png', bbox_inches='tight')
+plt.close(fig)  
+
+
+### Plot circuit depth, transpilation time, and execution time 
+
+fig = plt.figure(figsize=(16,10))
+plt.title(r'$U_f$ dependence', fontsize=25)
+plt.xlabel('Circuit number',fontsize=20)
+
+ax1 = fig.add_subplot(111)
+ax1.plot(list(range(num_circs)), transpilation_time_list, ls = '--', marker = 's', color = 'r', label = 'Transpilation time')
+ax1.plot(list(range(num_circs)), circ_run_time_arr, ls = '--', marker = 's', color = 'g', label = 'Circuit execution time')
+ax1.set_ylabel('Time taken (s)',fontsize=20)
+plt.xticks(fontsize=15)
+plt.yticks(fontsize=15)
+
+ax2 = ax1.twinx()
+ax2.plot(list(range(num_circs)), circ_depth_arr, ls = '-.', marker = 'o', color = 'b',  label = 'Circuit depth')
+ax2.set_ylabel('Transpiled circuit depth',fontsize=20)
+plt.xticks(fontsize=15)
+plt.yticks(fontsize=15)
+plt.xticks(ticks = np.arange(0,num_circs,4))
+fig.legend(bbox_to_anchor=(0.95, 0.95),fontsize = 15)
+
+fig.savefig(figures_folder+'/n=%i_backend=%s_time_and_depth.png') #, bbox_inches='tight'
+plt.close(fig)
+    
+
+### Plot circuit depth and frac prod zero 
+
+fig = plt.figure(figsize=(16,10))
+plt.title(r'Accuracy and circuit depth', fontsize=25)
+plt.xlabel('Circuit number',fontsize=20)
+
+ax1 = fig.add_subplot(111)
+ax1.plot(list(range(num_circs)), frac_perp_arr, ls = '--', marker = 's', color = 'r', label = r'accuracy')
+ax1.set_ylabel(r'Fraction of times output satisfied $y.s=0$',fontsize=20)
+plt.xticks(fontsize=15)
+plt.yticks(fontsize=15)
+
+ax2 = ax1.twinx()
+ax2.plot(list(range(num_circs)), circ_depth_arr, ls = '-.', marker = 'o', color = 'b',  label = 'Circuit depth')
+ax2.set_ylabel('Transpiled circuit depth',fontsize=20)
+plt.xticks(fontsize=15)
+plt.yticks(fontsize=15)
+plt.xticks(ticks = np.arange(0,num_circs,4))
+fig.legend(bbox_to_anchor=(0.95, 0.95),fontsize = 15)
+
+fig.savefig(figures_folder+'/n=%i_backend=%s_accuracy_and_depth.png') #, bbox_inches='tight'
+plt.close(fig)
+
+
+#%% Prompt 3
+### Scalability as n grows
+
+load_account()
+device_preference = ['ibmq_16_melbourne', 'ibmq_burlington']
+n_qubits = 14
+device_backend, simulator_backend = get_backends(device_preference = device_preference[0], n_qubits = n_qubits)
+
+n_list = np.arange(1,8)
+num_s = 10 # number of different s values, i.e. number of distinct circuits
+num_shots =20
+# create random s and circuits
+list_of_lists_s = []
+list_of_lists_circ = []
+list_of_lists_trans_circ = []
+for n in n_list:
+    n = int(n)
+    s_list = []
+    circ_list = []
+    transpiled_circ_list = []
+    for s_ind in range(num_s):
+        s = generate_random_s(n)
+        s_list.append(s)
+        circ, transpiled_circ = create_compact_circuit(s, device_backend)
+        circ_list.append(circ)
+        transpiled_circ_list.append(transpiled_circ)
+    list_of_lists_s.append(s_list)
+    list_of_lists_circ.append(circ_list)
+    list_of_lists_trans_circ.append(transpiled_circ_list)
+
+
+jobs_id_list = []
+
+for n_ind, n in enumerate(n_list):
+
+    cur_trans_circ_list = transpiled_circ_list[n_ind]
+    
+    job_qc = execute(cur_trans_circ_list, backend = device_backend, shots = num_shots)
+    job_monitor(job_qc) 
+    qc_id = job_qc.job_id() 
+
+    print("For n =%i, job ID=%s is done!"%(n,qc_id))
+    file2write=open("job_tracking.txt",'a')
+    file2write.write("Current time is " + str(datetime.now()) + " \n")
+    file2write.write("\nTrying scaling with n, exec time for n=%i, backend = %s, job ID = %s" 
+                     %(n, device_backend.name(), qc_id))
+    file2write.close()
+    jobs_id_list.append(qc_id)
+
+
+### Obtain average circuit length and average time vs n
+avg_circ_depth = []
+avg_trans_circ_depth = []
+for n_ind, n in enumerate(n_list):
+    transpiled_circ_list = list_of_lists_trans_circ[n_ind]
+    circ_list = list_of_lists_circ[n_ind]
+    circ_depth_list = [circ_list[i].depth() for i in range(num_s)]
+    
+#    transpiled_circ_list = get_transpiled_circ(circ_list, backend = device_backend)
+    trans_circ_depth_list = [transpiled_circ_list[i].depth() for i in range(num_s)]
+    
+    avg_circ_depth.append(np.average(circ_depth_list))
+    avg_trans_circ_depth.append(np.average(trans_circ_depth_list))
+
+### Obtain average execution time vs n
+avg_exec_time_list = []
+for n_ind, n in enumerate(n_list):
+    job_id = jobs_id_list[n_ind]
+    job_n = retrieve_job_from_id(job_id, backend = device_backend)
+    if str(job_n.status()) != 'JobStatus.ERROR':
+        result_n = job_n.result()
+        avg_exec_time_list.append(result_n.time_taken / num_s)
+
+
+
+###### Save the plots
+figures_folder = 'Figures/Prompt_3/'
+if not os.path.isdir(figures_folder):
+    os.makedirs(figures_folder) 
+
+plt.rcParams["font.family"] = "serif"
+
+
+
+### Scaling analysis plot figure save
+fig = plt.figure(figsize=(16,10))
+plt.title(r'Execution time scaling', fontsize=25)
+
+
+plt.plot(n_list[1:], avg_exec_time_list, ls = '--', marker = 's', color = 'r', label = 'Execution time')
+plt.xlabel(r'$n$',fontsize=20)
+plt.ylabel('Execution time (s)',fontsize=20)
+plt.xticks(fontsize=15)
+plt.yticks(fontsize=15)
+plt.ylim([0,1])
+fig.savefig(figures_folder+'/Exec_time_scaling.png', bbox_inches='tight')
+plt.close(fig)  
+
+### Circuit depth vs n
+fig = plt.figure(figsize=(16,10))
+plt.title(r'Average circuit depth vs n', fontsize=25)
+
+
+plt.plot(n_list, avg_trans_circ_depth, ls = '--', marker = 's', color = 'r', label = 'Transpiled circuit depth')
+plt.plot(n_list, avg_circ_depth, ls = '--', marker = 's', color = 'b', label = 'Circuit depth')
+plt.xlabel(r'$n$',fontsize=20)
+plt.ylabel('Average circuit depth',fontsize=20)
+plt.xticks(fontsize=15)
+plt.yticks(fontsize=15)
+fig.savefig(figures_folder+'/circuit_depth_scaling.png', bbox_inches='tight')
+plt.legend(fontsize = 25)
+plt.close(fig)  
+
+
+###### Save data
+results_folder = 'Results/Prompt_3/'
+if not os.path.isdir(results_folder):
+    os.makedirs(results_folder) 
+
+np.savez(results_folder+'Scaling_analysis',
+         device_backend = device_backend,
+         n_list = n_list, num_s = num_s, num_shots = num_shots,
+         list_of_lists_s = list_of_lists_s, list_of_lists_circ = list_of_lists_circ,
+         list_of_lists_trans_circ = list_of_lists_trans_circ,
+         jobs_id_list = jobs_id_list, avg_circ_depth = avg_circ_depth,
+         avg_trans_circ_depth = avg_trans_circ_depth,
+         avg_exec_time_list = avg_exec_time_list)
 
 
 #%% 
 
-
-
-job_qc = retrieve_job_from_id('5edfdf84748037001236db67', backend = device_backend)
 job_sim = retrieve_job_from_id('5edfe02d65afea001180b719', backend = simulator_backend)
 result_sim = job_sim.result()
 result_qc = job_qc.result()
 
 
 
-
 #%% Modify this in order for it to work on IBM quantum computers instead of simulators
     
     
-        
-    def simon_solution(self,f, num_shots = 20):
-        """ 
-        For a higher level implementation of Simon's algorithm. Takes an input f, and number of times the circuit is to be run.
-        Returns the result of the search.
-        Args:
-            f: list of length n. f[i] is a string of length n.
-            num_shots: Integer>0. Higher the value, larger the probability of success
-        Returns:
-            list_s: List of strings, with each string being of length n. These will contain the solution of the search problem, as 
-                    determined by the Grover's algorithm
-        """
-        Uf = self.create_Uf_matrix(f)
-        circ = self.get_Simon_circuit_from_matrix(Uf)
-        counts = self.run_created_circuit(circ, num_shots = num_shots)
-        list_y = [y for y in counts]
-        list_s = self.s_solution(list_y)
-        return list_s
-
-    def verify_Simon_output(self,f, list_s):
-        """Verifies if the output from the Simon's algorithm is correct
-        Args:
-            f: list of length n. f[i] is a string of length n.
-            list_s: List of strings, with each string being of length n. These will contain the solution of the search problem, as 
-                    determined by the Grover's algorithm. The first element of list_s will always contain '000..0'.
-        Returns:
-            is_correct: Bool. True if output is correct, else false.
-        """
-        ## Type checking
-        if type(f) != list:
-            raise ValueError('Input the function in the form of a list')
-        if any((x != '0' and x != '1') for x in "".join([y for y in f])):
-            raise ValueError('The input function should only contain zeros and ones.')
-        len_fs = [len(x) for x in f]
-        if np.sum(np.diff(len_fs)) != 0:
-            raise ValueError('Each element of f must be a string of the same length as the others.')
-            
-        if type(list_s) != list:
-            raise ValueError('list_s must be a list')
-        
-        ## return true only if list_s contains exactly two strings, and the non-zero string satisfies the condition f[0] = f[0+s]
-        
-        if len(list_s) == 2 and f[0] == f[0 + int(list_s[1],2)]:
-            return True
-        elif len(list_s) == 1:
-            return True
-        else:
-            return False
-        
-    def scaling_analysis( self, n_min = 1, n_max = 4, time_out_val = 10000, num_times = 20, save_data = True, num_shots = 20): 
-        """ Obtains the time scaling as n is increased
-        Kwargs:
-            n_min = (integer) lowest value of n to be considered
-            n_max = (integer) highest value of n to be considered
-            time_out_val = (integer) timeout value for running the QISKIT circuit
-            num_times: (integer) number of times Simon's algorithm is to be executed for each n.
-            save_data: (bool) If True, save the data in a .npz file
-        Returns:
-            n_list: (list) contains all integers from n_min to n_max
-            time_reqd_arr: [ndarray) [i,j] entry contains the amount of time it took for ith value of n, and jth iteration
-            correctness_arr: (ndarray) True or False entries depending on whether the algorithm succeeded or failed.
-            avg_time: (ndarray) avg_time[i] contains the average amount of time taken for n_list[i]
-        """
-            
-        n_list = list(range(n_min,n_max+1))
-        time_reqd_arr = np.zeros([(n_max-n_min)+1, num_times])
-        correctness_arr = np.ones([(n_max-n_min)+1, num_times], dtype = int)
-        ci_list = ["failed", "succeeded"]
-        for ind, n in enumerate(n_list):
-            for iter_ind in range(num_times):
-                s = self.generate_random_s(n)
-                f = self.s_function(s)
-                
-                start = time.time()
-                list_s = self.simon_solution(f, num_shots = num_shots)
-                end = time.time()
-                time_reqd_arr[ind, iter_ind] = end-start
-                correctness_arr[ind, iter_ind] *= self.verify_Simon_output(f, list_s)
-                print("n = %i and iteration = %i:It took %i seconds. Algorithm %s. Correct s = %s, obtained values are"
-                      %(n,iter_ind,(end-start), ci_list[correctness_arr[ind, iter_ind]], s),list_s)
-        avg_time = np.sum(time_reqd_arr,1)/np.shape(time_reqd_arr)[1]
-        if save_data:
-            np.savez('Simon_scaling.npz', n_list = n_list, num_times = num_times, time_reqd_arr = time_reqd_arr,
-                     correctness_arr = correctness_arr, avg_time = avg_time)
-        return n_list, time_reqd_arr, correctness_arr, avg_time
     
-    def load_scaling_analysis(self): 
-        """
-        Load and return the the data for time scaling vs n.
-        """
-        data = np.load('Simon_scaling.npz')
-        n_list = data['n_list']
-        num_times = data['num_times']
-        correctness_arr = data['correctness_arr']
-        time_reqd_arr = data['time_reqd_arr']
-        avg_time = data['avg_time']
+def simon_solution(self,f, num_shots = 20):
+    """ 
+    For a higher level implementation of Simon's algorithm. Takes an input f, and number of times the circuit is to be run.
+    Returns the result of the search.
+    Args:
+        f: list of length n. f[i] is a string of length n.
+        num_shots: Integer>0. Higher the value, larger the probability of success
+    Returns:
+        list_s: List of strings, with each string being of length n. These will contain the solution of the search problem, as 
+                determined by the Grover's algorithm
+    """
+    Uf = self.create_Uf_matrix(f)
+    circ = self.get_Simon_circuit_from_matrix(Uf)
+    counts = self.run_created_circuit(circ, num_shots = num_shots)
+    list_y = [y for y in counts]
+    list_s = self.s_solution(list_y)
+    return list_s
+
+def verify_Simon_output(self,f, list_s):
+    """Verifies if the output from the Simon's algorithm is correct
+    Args:
+        f: list of length n. f[i] is a string of length n.
+        list_s: List of strings, with each string being of length n. These will contain the solution of the search problem, as 
+                determined by the Grover's algorithm. The first element of list_s will always contain '000..0'.
+    Returns:
+        is_correct: Bool. True if output is correct, else false.
+    """
+    ## Type checking
+    if type(f) != list:
+        raise ValueError('Input the function in the form of a list')
+    if any((x != '0' and x != '1') for x in "".join([y for y in f])):
+        raise ValueError('The input function should only contain zeros and ones.')
+    len_fs = [len(x) for x in f]
+    if np.sum(np.diff(len_fs)) != 0:
+        raise ValueError('Each element of f must be a string of the same length as the others.')
         
-        return n_list, num_times, correctness_arr, time_reqd_arr, avg_time
+    if type(list_s) != list:
+        raise ValueError('list_s must be a list')
     
-    def plot_and_save_scaling(self, n_list, avg_time, save_data = False):
-        """
-        Plot average run time vs n
-        Args:
-            n_list: List of n values
-            avg_time: list of average time of execution corresponding to n's from n_list
-            save_data: save the figure if this is set to True.
-        """
-        plt.rcParams["font.family"] = "serif"
-        fig = plt.figure(figsize=(16,10))
-        
-        z = np.polyfit(n_list, avg_time, 10)
-        p = np.poly1d(z)
-        
-        plt.plot(np.linspace(n_list[0], n_list[-1] + 0.1, 100), p(np.linspace(n_list[0], n_list[-1] + 0.1, 100)), ls = '-', color = 'r')
-        plt.plot(n_list, avg_time, ls = '', markersize = 15, marker = '.',label = 'M') #, ls = '--'
-        plt.title('Execution time scaling for Simon\'s algorithm', fontsize=25)
-        plt.xlabel('n (bit string length)',fontsize=20)
-        plt.ylabel('Average time of execution (s)',fontsize=20)
-        plt.xticks(fontsize=15)
-        plt.yticks(fontsize=15)
-        if save_data:
-            fig.savefig('Figures/Simon_scaling.png', bbox_inches='tight')
-        
-    def check_correctness(self, n= 2, num_times = 100, num_shots = 20):
-        """
-        Run Simon's algorithm for a given n, num_times number of times. For each run, f is chosen randomly.
-        KwArgs:
-            n: Integer
-            num_times: Integer
-            num_shots: integer
-        Returns: 
-            correctness_arr: Array of bools
-        """
-        correctness_arr = np.ones(num_times, dtype = int)
-        ci_list = ["failed", "succeeded"]
-        for iter_ind in range(num_times):
-            s = self.generate_random_s(n)
-            f = self.s_function(s)
-            list_s = self.simon_solution(f, num_shots = num_shots)
-            correctness_arr[iter_ind] *= self.verify_Simon_output(f, list_s)
-            print("Iteration = %i: Algorithm %s. Correct s = %s, obtained values are"
-                      %(iter_ind, ci_list[correctness_arr[iter_ind]], s),list_s)
-            
-        return correctness_arr
+    ## return true only if list_s contains exactly two strings, and the non-zero string satisfies the condition f[0] = f[0+s]
     
+    if len(list_s) == 2 and f[0] == f[0 + int(list_s[1],2)]:
+        return True
+    elif len(list_s) == 1:
+        return True
+    else:
+        return False
+
     
-    def Uf_dependence_analysis(self, n = 3, num_times= 100, time_out_val = 10000, save_data = True, num_shots = 20):
-        """
-        Runs Simon's algorithms for num_times number of times for randomly chosen f's correspoding to given value of n
-        kwargs:
-            n: Integer
-            num_times: Integer (number of random f's to be tested)
-            time_out_val: integer
-            save_data: bool
-            num_shots: integer
-        returns:
-            correctness_arr: array of bools
-            time_required_arr: array of floats
-        """
-      
-        correctness_arr = np.ones(num_times, dtype = int)
-        time_reqd_arr = np.zeros(num_times)
-        ci_list = ["failed", "succeeded"]
-        for iter_ind in range(num_times):
-            s = self.generate_random_s(n)
-            f = self.s_function(s)
-            
-            start = time.time()
-            list_s = self.simon_solution(f, num_shots = num_shots)
-            end = time.time()
-            time_reqd_arr[iter_ind] = end-start
-            correctness_arr[iter_ind] *= self.verify_Simon_output(f, list_s)
-            print("Iteration %i:It took %i seconds. Algorithm %s. Correct s = %s, obtained values are"
-                  %(iter_ind, (end-start), ci_list[correctness_arr[iter_ind]], s),list_s)
+def check_correctness(self, n= 2, num_times = 100, num_shots = 20):
+    """
+    Run Simon's algorithm for a given n, num_times number of times. For each run, f is chosen randomly.
+    KwArgs:
+        n: Integer
+        num_times: Integer
+        num_shots: integer
+    Returns: 
+        correctness_arr: Array of bools
+    """
+    correctness_arr = np.ones(num_times, dtype = int)
+    ci_list = ["failed", "succeeded"]
+    for iter_ind in range(num_times):
+        s = self.generate_random_s(n)
+        f = self.s_function(s)
+        list_s = self.simon_solution(f, num_shots = num_shots)
+        correctness_arr[iter_ind] *= self.verify_Simon_output(f, list_s)
+        print("Iteration = %i: Algorithm %s. Correct s = %s, obtained values are"
+                  %(iter_ind, ci_list[correctness_arr[iter_ind]], s),list_s)
         
-        if save_data:
-            np.savez('Simon_Uf_dependence.npz', num_times = num_times, n = n,
-                     correctness_arr = correctness_arr, time_reqd_arr = time_reqd_arr)
-
-            
-        return correctness_arr, time_reqd_arr
-    
-    def load_Uf_analysis(self): 
-        """
-        Load data from file
-        """
-        data = np.load('Simon_Uf_dependence.npz')
-        num_times = data['num_times']
-        correctness_arr = data['correctness_arr']
-        time_reqd_arr = data['time_reqd_arr']        
-        n = data['n']
-        
-        return num_times, correctness_arr, n, time_reqd_arr
-    
-    def plot_and_save_UF_analysis(self, time_reqd_arr, save_data = False):
-        """
-        Plot histogram of run time, for randomly chosen fs
-        Args:
-            time_reqd_arr: array of floats
-            save_data: save the figure if this is set to True.
-        """
-        plt.rcParams["font.family"] = "serif"
-        fig = plt.figure(figsize=(16,10))
-        
-        
-        plt.hist(time_reqd_arr)
-        plt.title('Dependence of execution time on $U_f$ (Simon\'s algorithm)', fontsize=25)
-        plt.xlabel('Execution time (s)',fontsize=20)
-        plt.ylabel('Frequency of occurence',fontsize=20)
-        plt.xticks(fontsize=15)
-        plt.yticks(fontsize=15)
-        
-        if save_data:
-            fig.savefig('Figures/Simon_hist.png', bbox_inches='tight')
-
-        
-
-#%% Old stuff
-
-
-
-
-
-
-
-
-
-
-
-#%% 
-
+    return correctness_arr
 
 
 #%% Suggested template for a lower level implementation:
